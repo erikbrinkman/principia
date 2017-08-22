@@ -656,6 +656,6 @@ describe('backend', () => {
       assert(
         lineDists.every(dist => dist < 2),
         `${JSON.stringify(rectz)} are not close to lines ${JSON.stringify(linez)} (${JSON.stringify(lineDists)})`);
-    }).timeout(4000);
+    }).timeout(10000);
   });
 });

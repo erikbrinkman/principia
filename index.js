@@ -37,10 +37,15 @@ class LinePlot {
     this._width = width || 162;
     this._height = height || 100;
     this._lines = [];
-    this._xBounds = [Infinity, -Infinity];
-    this._xBoundsSet = false;
-    this._yBounds = [Infinity, -Infinity];
-    this._yBoundsSet = false;
+    // Bounds
+    this._xMin = Infinity;
+    this._xMinSet = false;
+    this._xMax = -Infinity;
+    this._xMaxSet = false;
+    this._yMin = Infinity;
+    this._yMinSet = false;
+    this._yMax = -Infinity;
+    this._yMaxSet = false;
     this._xScale = d3.scaleLinear();
     this._yScale = d3.scaleLinear();
     this._xLabel = '';
@@ -59,19 +64,13 @@ class LinePlot {
       x = d => d[0],
       y = d => d[1],
     } = options || {};
-    const xb = this._xBounds;
-    const yb = this._yBounds;
     data = data.map(d => {
       const xi = x(d);
       const yi = y(d);
-      if (!this._xBoundsSet) {
-        xb[0] = Math.min(xb[0], xi);
-        xb[1] = Math.max(xb[1], xi);
-      }
-      if (!this._yBoundsSet) {
-        yb[0] = Math.min(yb[0], yi);
-        yb[1] = Math.max(yb[1], yi);
-      }
+      this._xMinSet || (this._xMin = Math.min(this._xMin, xi));
+      this._xMaxSet || (this._xMax = Math.max(this._xMax, xi));
+      this._yMinSet || (this._yMin = Math.min(this._yMin, yi));
+      this._yMaxSet || (this._yMax = Math.max(this._yMax, yi));
       return [xi, yi];
     });
     const line = new Line(data);
@@ -89,15 +88,27 @@ class LinePlot {
     return this;
   }
 
-  xbounds(bounds) {
-    this._xBounds = bounds;
-    this._xBoundsSet = true;
+  xmin(min) {
+    this._xMin = min;
+    this._xMinSet = true;
     return this;
   }
 
-  ybounds(bounds) {
-    this._yBounds = bounds;
-    this._yBoundsSet = true;
+  xmax(max) {
+    this._xMax = max;
+    this._xMaxSet = true;
+    return this;
+  }
+
+  ymin(min) {
+    this._yMin = min;
+    this._yMinSet = true;
+    return this;
+  }
+
+  ymax(max) {
+    this._yMax = max;
+    this._yMaxSet = true;
     return this;
   }
 
@@ -158,14 +169,14 @@ class LinePlot {
     }
 
     const svg = d3.select(svgElement).append('g');
-    const x = this._xScale.range([0, this._width]).domain(this._xBounds);
-    const y = this._yScale.range([this._height, 0]).domain(this._yBounds);
+    const x = this._xScale.range([0, this._width]).domain([this._xMin, this._xMax]);
+    const y = this._yScale.range([this._height, 0]).domain([this._yMin, this._yMax]);
 
     // axes
     const axisGroup = svg.append('g').classed('axis', true);
     const xAxisGen = d3.axisBottom(x)
       .tickSize(-2, 0).tickPadding(5)
-      .tickValues(this._xBounds.concat(this._xTicks));
+      .tickValues([this._xMin, this._xMax].concat(this._xTicks));
     const xAxisGroup = axisGroup.append('g').classed('x', true);
     const xAxis = xAxisGroup.append('g')
       .classed('ticks', true)
@@ -179,7 +190,7 @@ class LinePlot {
     const yAxisGroup = axisGroup.append('g').classed('y', true);
     const yAxisGen = d3.axisLeft(y)
       .tickSize(-2.5, 0).tickPadding(2)
-      .tickValues(this._yBounds.concat(this._yTicks));
+      .tickValues([this._yMin, this._yMax].concat(this._yTicks));
     const yAxis = yAxisGroup.append('g')
       .attr('transform', 'translate(-5, 0)')
       .call(yAxisGen);

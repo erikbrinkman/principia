@@ -8,6 +8,7 @@ class Line {
     this._class = '';
     this._label = '';
     this._curve = d3.curveLinear;
+    this._point = null;
   }
 
   classed(cls) {
@@ -22,6 +23,11 @@ class Line {
 
   curve(curve) {
     this._curve = curve;
+    return this;
+  }
+
+  point(point) {
+    this._point = point;
     return this;
   }
 }
@@ -192,12 +198,22 @@ class LinePlot {
     // lines
     // TODO Truncate data if it goes outside of bounds
     const lineGroup = svg.append('g').classed('line', true);
+    const pointGroup = svg.append('g').classed('point', true);
     this._lines.forEach(line => {
       const lineDef = d3.line()
         .x(d => x(d[0]))
         .y(d => y(d[1]))
         .curve(line._curve);
-      lineGroup.append('path').classed(line._class, true).attr('d', lineDef(line._data));
+      lineGroup.append('path')
+        .classed(line._class, true)
+        .attr('d', lineDef(line._data));
+      if (line._point) {
+        pointGroup.append('g').classed(line._class, true)
+          .selectAll('path').data(line._data).enter()
+          .append('path')
+          .attr('transform', ([px, py]) => `translate(${x(px)}, ${y(py)})`)
+          .attr('d', line._point);
+      }
     });
 
     // space apart y ticks

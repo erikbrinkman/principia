@@ -79,37 +79,81 @@ class LinePlot {
   }
 
   width(width) {
-    this._width = width;
-    return this;
+    if (width === undefined) {
+      return this._width;
+    } else {
+      this._width = width;
+      return this;
+    }
   }
 
   height(height) {
-    this._height = height;
-    return this;
+    if (height === undefined) {
+      return this._height;
+    } else {
+      this._height = height;
+      return this;
+    }
   }
 
   xmin(min) {
-    this._xMin = min;
-    this._xMinSet = true;
-    return this;
+    if (min === undefined) {
+      return this._xMin;
+    } else {
+      this._xMin = min;
+      this._xMinSet = true;
+      return this;
+    }
   }
 
   xmax(max) {
-    this._xMax = max;
-    this._xMaxSet = true;
-    return this;
+    if (max === undefined) {
+      return this._xMax;
+    } else {
+      this._xMax = max;
+      this._xMaxSet = true;
+      return this;
+    }
+  }
+
+  xbounds(bounds) {
+    if (bounds === undefined) {
+      return [this.xmin(), this.xmax()];
+    } else {
+      const ([min, max]) = bounds;
+      this.xmin(min).xmax(max);
+      return this;
+    }
   }
 
   ymin(min) {
-    this._yMin = min;
-    this._yMinSet = true;
-    return this;
+    if (min === undefined) {
+      return this._yMin;
+    } else {
+      this._yMin = min;
+      this._yMinSet = true;
+      return this;
+    }
   }
 
   ymax(max) {
-    this._yMax = max;
-    this._yMaxSet = true;
-    return this;
+    if (max === undefined) {
+      return this._yMax;
+    } else {
+      this._yMax = max;
+      this._yMaxSet = true;
+      return this;
+    }
+  }
+
+  ybounds(bounds) {
+    if (bounds === undefined) {
+      return [this.ymin(), this.ymax()];
+    } else {
+      const ([min, max]) = bounds;
+      this.ymin(min).ymax(max);
+      return this;
+    }
   }
 
   xlabel(label, options) {

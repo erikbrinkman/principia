@@ -120,7 +120,7 @@ class LinePlot {
     if (bounds === undefined) {
       return [this.xmin(), this.xmax()];
     } else {
-      const ([min, max]) = bounds;
+      const [min, max] = bounds;
       this.xmin(min).xmax(max);
       return this;
     }
@@ -150,7 +150,7 @@ class LinePlot {
     if (bounds === undefined) {
       return [this.ymin(), this.ymax()];
     } else {
-      const ([min, max]) = bounds;
+      const [min, max] = bounds;
       this.ymin(min).ymax(max);
       return this;
     }

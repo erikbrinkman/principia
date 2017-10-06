@@ -14,4 +14,5 @@ Todo
 
 - `turf` is a large dependency and geo focused.
   It should probably be stripped out in favor of a more appropriate library.
-- Larger structure and convenience methods for common plot types.
+- Bar graphs.
+- Area charts (i.e. area between lines is filled in)

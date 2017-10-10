@@ -220,7 +220,7 @@ class LinePlot {
     const axisGroup = svg.append('g').classed('axis', true);
     const xAxisGen = d3.axisBottom(x)
       .tickSize(-2, 0).tickPadding(5)
-      .tickValues([this._xMin, this._xMax].concat(this._xTicks));
+      .tickValues([...new Set([this._xMin, this._xMax].concat(this._xTicks))]);
     const xAxisGroup = axisGroup.append('g').classed('x', true);
     const xAxis = xAxisGroup.append('g')
       .classed('ticks', true)
@@ -234,7 +234,7 @@ class LinePlot {
     const yAxisGroup = axisGroup.append('g').classed('y', true);
     const yAxisGen = d3.axisLeft(y)
       .tickSize(-2.5, 0).tickPadding(2)
-      .tickValues([this._yMin, this._yMax].concat(this._yTicks));
+      .tickValues([...new Set([this._yMin, this._yMax].concat(this._yTicks))]);
     const yAxis = yAxisGroup.append('g')
       .attr('transform', 'translate(-5, 0)')
       .call(yAxisGen);

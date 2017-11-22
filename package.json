@@ -4,7 +4,10 @@
   "description": "A library for making plots loosely based off of principae",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "jest --forceExit",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "tslint": "tslint -c tslint.json -p tsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -20,12 +23,33 @@
   },
   "homepage": "https://github.com/erikbrinkman/principia#readme",
   "dependencies": {
-    "@turf/turf": "^4.6.1",
+    "@turf/turf": "^4.7.3",
     "d3": "^4.10.0",
     "fmin": "0.0.2",
     "quadprog": "^1.5.1"
   },
   "devDependencies": {
-    "mocha": "^3.5.0"
+    "@types/geojson": "^1.0.6",
+    "@types/node": "^8.0.53",
+    "jest": "^21.2.1",
+    "ts-jest": "^21.2.3",
+    "tslint": "^5.8.0",
+    "typescript": "^2.6.1"
+  },
+  "jest": {
+    "globals": {
+      "__TS_CONFIG__": "tsconfig.json"
+    },
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.(ts)$": "./node_modules/ts-jest/preprocessor.js"
+    },
+    "testMatch": [
+      "**/test/**/*.test.(ts|js)"
+    ],
+    "testEnvironment": "node"
   }
 }

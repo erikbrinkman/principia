@@ -1,6 +1,14 @@
-'use strict';
+"use strict";
 
-function randomIntWeighted(weights: number[]) {
+export function mean(array: number[]): number {
+  return array.reduce((m, v, i) => m + (v - m) / (i + 1), 0);
+}
+
+export function sum(array: number[]): number {
+  return array.reduce((s, v) => s + v, 0);
+}
+
+export function randomIntWeighted(weights: number[]): () => number {
   let sum = 0;
   let cumsum: number[] = [];
   weights.forEach(v => {
@@ -13,12 +21,7 @@ function randomIntWeighted(weights: number[]) {
     const rand = Math.random();
     // TODO Could be made faster with binary search (loDash?)
     // XXX loDash also provides mean and sum
+    // FIXME This looks wrong
     return thresh.findIndex(t => rand <= t);
   }
-}
-
-export = {
-  mean: (array: number[]) => array.reduce((m, v, i) => m + (v - m) / (i + 1), 0),
-  sum: (array: number[]) => array.reduce((s, v) => s + v, 0),
-  randomIntWeighted: randomIntWeighted,
 }

@@ -1,12 +1,12 @@
-'use strict';
-import fmin = require('fmin');
-import quadprog = require('quadprog');
-import points = require('./points');
-import lines = require('./lines');
-import rects = require('./rects');
-import curves = require('./curves');
-import polys = require('./polys');
-import utils = require('./utils');
+"use strict";
+import * as fmin from "fmin";
+import * as quadprog from "quadprog";
+import * as points from "./points";
+import * as lines from "./lines";
+import * as rects from "./rects";
+import * as curves from "./curves";
+import * as polys from "./polys";
+import * as utils from "./utils";
 
 /** Minimize 0.5 x' q x - d' x st. a' x >= b
  *
@@ -33,7 +33,7 @@ function minqp(q: number[][], d: number[], a: number[][], b: number[]): number[]
  * [4, 1]]`.
  * @returns {[num]} The new positions of every element in parallel order.
  */
-function spaceApart(elements: [number, number][]): number[] {
+export function space1(elements: [number, number][]): number[] {
   if (!elements.length) {
     return [];
   }
@@ -116,7 +116,8 @@ interface PlaceLabelOpts {
   wSpread?: number;
   wOther?: number;
 }
-function placeLabels(bbox: Rect, boxes: [number, number][], curvez: Curve[], options?: PlaceLabelOpts) {
+
+export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], options?: PlaceLabelOpts) {
   // unpack options
   const {
     restarts = 10,
@@ -186,9 +187,4 @@ function placeLabels(bbox: Rect, boxes: [number, number][], curvez: Curve[], opt
     }
   }
   return arrayToPoints(best);
-}
-
-export = {
-  space1: spaceApart,
-  space2: placeLabels,
 }

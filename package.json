@@ -2,7 +2,7 @@
   "name": "principia",
   "version": "0.0.5",
   "description": "A library for making plots loosely based off of principae",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "jest --forceExit",
     "build": "tsc",
@@ -24,11 +24,12 @@
   "homepage": "https://github.com/erikbrinkman/principia#readme",
   "dependencies": {
     "@turf/turf": "^4.7.3",
-    "d3": "^4.10.0",
+    "d3": "^4.11.1",
     "fmin": "0.0.2",
     "quadprog": "^1.5.1"
   },
   "devDependencies": {
+    "@types/d3": "^4.11.1",
     "@types/geojson": "^1.0.6",
     "@types/node": "^8.0.53",
     "jest": "^21.2.1",

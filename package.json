@@ -38,9 +38,6 @@
     "typescript": "^2.6.1"
   },
   "jest": {
-    "globals": {
-      "__TS_CONFIG__": "tsconfig.json"
-    },
     "moduleFileExtensions": [
       "ts",
       "js"

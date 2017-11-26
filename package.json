@@ -32,6 +32,7 @@
     "@types/d3": "^4.11.1",
     "@types/geojson": "^1.0.6",
     "@types/node": "^8.0.53",
+    "headlesspdf": "0.0.8",
     "jest": "^21.2.1",
     "ts-jest": "^21.2.3",
     "tslint": "^5.8.0",

@@ -65,7 +65,8 @@ class Line {
   }
 }
 
-class LinePlot {
+export class LinePlot {
+  // FIXME Add axis tick formatting
   private _width: number;
   private _height: number;
   private _lines: Line[];
@@ -418,5 +419,3 @@ class LinePlot {
     return svg.node();
   }
 }
-
-module.exports.LinePlot = LinePlot;

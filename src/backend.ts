@@ -1,14 +1,15 @@
 "use strict";
 import * as fmin from "fmin";
 import * as quadprog from "quadprog";
-import * as points from "./points";
-import * as lines from "./lines";
-import * as rects from "./rects";
 import * as curves from "./curves";
+import * as lines from "./lines";
+import * as points from "./points";
 import * as polys from "./polys";
+import * as rects from "./rects";
 import * as utils from "./utils";
-import { Rect } from "./rects";
 import { Curve } from "./curves";
+import { Poly } from "./polys";
+import { Rect } from "./rects";
 
 /** Minimize 0.5 x' q x - d' x st. a' x >= b
  *
@@ -71,11 +72,11 @@ export function space1(elements: [number, number][]): number[] {
 }
 
 function pointsToArray(pointArray: [number, number][]): number[] {
-  return [].concat(...pointArray);
+  return ([] as number[]).concat(...pointArray as number[][]);
 }
 
 function arrayToPoints(array: number[]): [number, number][] {
-  const pointArray = new Array(array.length / 2).fill(null).map(_ => [null, null] as [number, number]);
+  const pointArray = new Array(array.length / 2).fill(null).map(_ => [0, 0] as [number, number]);
   array.forEach((c, i) => pointArray[Math.floor(i / 2)][i % 2] = c);
   return pointArray;
 }
@@ -85,10 +86,10 @@ function initGenerator(bbox: Rect, boxes: [number, number][], curvez: Curve[], b
   let valid = [rects.to.poly(bbox)];
   curvez.forEach(curve => curves.to.lines(curve).forEach(line => {
     const diff = lines.to.poly(line, {cap: 'square', width: buffer});
-    valid = [].concat(...valid.map(vals => polys.difference(vals, diff)));
+    valid = ([] as Poly[]).concat(...valid.map(vals => polys.difference(vals, diff)));
   }));
   const labelPolys = boxes.map(([width, height]) => {
-    return [].concat(...valid.map(poly => {
+    return ([] as Poly[]).concat(...valid.map(poly => {
       const shifts = [
         polys.translate(poly, [-width, 0]),
         polys.translate(poly, [-width, -height]),
@@ -96,7 +97,7 @@ function initGenerator(bbox: Rect, boxes: [number, number][], curvez: Curve[], b
       ];
       let diff = [poly];
       shifts.forEach(shift => {
-        diff = [].concat(...diff.map(p => polys.intersect(p, shift)));
+        diff = ([] as Poly[]).concat(...diff.map(p => polys.intersect(p, shift)));
       });
       return diff;
     }));
@@ -148,7 +149,7 @@ export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], o
     // dist between a label and its line
     const distToLines = utils.mean(dists.map((ds, i) => ds[i]));
     // dist between labels
-    const distBetween = utils.mean([].concat(...grouped.map((pi, i) =>
+    const distBetween = utils.mean(([] as number[]).concat(...grouped.map((pi, i) =>
       grouped.slice(i + 1).map(pj => points.dist.point(pi, pj))
     )));
     // dist to other lines
@@ -172,7 +173,7 @@ export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], o
   const gen = initGenerator(bbox, boxes, curvez, lineBuffer);
 
   // find best over several random restarts
-  let best = null;
+  let best: number[] = [];
   let bestLoss = Infinity;
   for (let _ = 0; _ < restarts; ++_) {
     let init = pointsToArray(gen());
@@ -183,7 +184,7 @@ export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], o
       penalty *= 2;
     }
     const l = loss(init);
-    if (l < bestLoss || best === null) {
+    if (l < bestLoss || best.length === 0) {
       best = init;
       bestLoss = l;
     }

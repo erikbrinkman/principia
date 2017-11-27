@@ -338,7 +338,7 @@ export class LinePlot {
         .curve(line.curve());
       lineGroup.append('path')
         .classed(line.classed(), true)
-        .attr('d', lineDef(line.data()));
+        .attr('d', lineDef(line.data()) as string);
       if (line.point()) {
         pointGroup.append('g').classed(line.classed(), true)
           .selectAll('path').data(line.data()).enter()
@@ -356,7 +356,7 @@ export class LinePlot {
     });
     const newYs = backend.space1(yTickSpaces);
     yTicks.forEach((tick, i) => {
-      tick.setAttribute('y', ((parseFloat(tick.getAttribute('y')) || 0) + newYs[i] - yTickSpaces[i][0]).toString());
+      tick.setAttribute('y', (parseFloat(tick.getAttribute("y") || "0") + newYs[i] - yTickSpaces[i][0]).toString());
     });
 
     // space apart x ticks
@@ -367,7 +367,7 @@ export class LinePlot {
     });
     const newXs = backend.space1(xTickSpaces);
     xTicks.forEach((tick, i) => {
-      tick.setAttribute('x', ((parseFloat(tick.getAttribute('x')) || 0) + newXs[i] - xTickSpaces[i][0]).toString());
+      tick.setAttribute('x', (parseFloat(tick.getAttribute("x") || "0") + newXs[i] - xTickSpaces[i][0]).toString());
     });
 
     // align x axis label

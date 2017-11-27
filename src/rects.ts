@@ -1,7 +1,6 @@
-"use strict";
-import * as lines from "./lines"
-import { Point } from "./points";
+import * as lines from "./lines";
 import { Line } from "./lines";
+import { Point } from "./points";
 import { Poly } from "./polys";
 
 export type Rect = [number, number, number, number];
@@ -36,7 +35,7 @@ export const contains = {
     const [x2, y2, w2, h2] = other;
     return x1 - tol <= x2 && x2 + w2 <= x1 + w1 + tol && y1 - tol <= y2 && y2 + h2 <= y1 + h1 + tol;
   },
-}
+};
 
 function toPoly(rect: Rect): Poly {
   const [x, y, w, h] = rect;
@@ -62,7 +61,7 @@ export const to = {
 
   poly: toPoly,
   points: toPoly,
-}
+};
 
 export const dist = {
   point: (rect: Rect, point: Point): number => {
@@ -91,7 +90,7 @@ export const dist = {
       Math.min(...to.poly(other).map(point => dist.point(rect, point))),
     );
   },
-}
+};
 
 export const intersect = {
   point: contains.point,
@@ -103,7 +102,7 @@ export const intersect = {
   rect: (rect: Rect, other: Rect, options?: {}): boolean => {
     return contains.rect(rect, other, options) || contains.rect(other, rect, options) || to.lines(other).some(line => intersect.line(rect, line, options));
   },
-}
+};
 
 export const random = {
   point: (rect: Rect): Point => {
@@ -113,4 +112,4 @@ export const random = {
       Math.random() * h + y,
     ];
   },
-}
+};

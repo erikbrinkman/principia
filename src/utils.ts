@@ -1,5 +1,4 @@
-"use strict";
-
+// FIXME Document
 export function mean(array: number[]): number {
   return array.reduce((m, v, i) => m + (v - m) / (i + 1), 0);
 }
@@ -10,7 +9,7 @@ export function sum(array: number[]): number {
 
 export function randomIntWeighted(weights: number[]): () => number {
   let sum = 0;
-  let cumsum: number[] = [];
+  const cumsum: number[] = [];
   weights.forEach(v => {
     sum += v;
     cumsum.push(sum);
@@ -23,5 +22,5 @@ export function randomIntWeighted(weights: number[]): () => number {
     // XXX loDash also provides mean and sum
     // FIXME This looks wrong
     return thresh.findIndex(t => rand <= t);
-  }
+  };
 }

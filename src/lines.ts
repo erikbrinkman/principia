@@ -1,9 +1,8 @@
-"use strict";
 import * as points from "./points";
 import * as rects from "./rects";
 import { Point } from "./points";
-import { Rect } from "./rects";
 import { Poly } from "./polys";
+import { Rect } from "./rects";
 
 export type Line = [Point, Point];
 
@@ -38,7 +37,7 @@ export const contains = {
   point: (line: Line, point: Point, options?: {tol?: number}): boolean => {
     return orientation(line, point, options) === 0 && rectContainsPoint(line, point, options);
   },
-}
+};
 
 export const dist = {
   point: (line: Line, point: Point): number => {
@@ -51,7 +50,7 @@ export const dist = {
     const u = Math.min(Math.max(0, c), 1);
     return Math.sqrt((rx - u * lx) ** 2 + (ry - u * ly) ** 2);
   },
-}
+};
 
 export const intersect = {
   point: contains.point,
@@ -71,33 +70,33 @@ export const intersect = {
       || (o3 === 0 && rectContainsPoint(other, line[0], options))
       || (o4 === 0 && rectContainsPoint(other, line[1], options));
   },
-}
+};
 
 export const to = {
   // FIXME Change cap to enum?
-  poly: (line: Line, options?: {cap?: string, width?:number}): Poly => {
-    const { cap = 'butt', width = 1 } = options || {};
+  poly: (line: Line, options?: {cap?: string, width?: number}): Poly => {
+    const { cap = "butt", width = 1 } = options || {};
     let vx = line[1][0] - line[0][0];
     let vy = line[1][1] - line[0][1];
     const mag = Math.sqrt(vx ** 2 + vy ** 2) / width;
     vx /= mag;
     vy /= mag;
     switch (cap) {
-      case 'butt':
+      case "butt":
         return [
           [line[0][0] - vy, line[0][1] + vx],
           [line[0][0] + vy, line[0][1] - vx],
           [line[1][0] + vy, line[1][1] - vx],
           [line[1][0] - vy, line[1][1] + vx],
         ];
-      case 'square':
+      case "square":
         return [
           [line[0][0] - vx - vy, line[0][1] - vy + vx],
           [line[0][0] - vx + vy, line[0][1] - vy - vx],
           [line[1][0] + vx + vy, line[1][1] + vy - vx],
           [line[1][0] + vx - vy, line[1][1] + vy + vx],
         ];
-      case 'angle':
+      case "angle":
         return [
           [line[0][0] - vy, line[0][1] + vx],
           [line[0][0] - vx, line[0][1] - vy],
@@ -122,7 +121,7 @@ export const to = {
   points: (line: Line): Point[] => {
     return line;
   },
-}
+};
 
 export const random = {
   point: (line: Line): Point => {
@@ -132,4 +131,4 @@ export const random = {
       line[0][1] + rand * (line[1][1] - line[0][1]),
     ];
   },
-}
+};

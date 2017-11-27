@@ -1,4 +1,3 @@
-"use strict";
 import * as fmin from "fmin";
 import * as quadprog from "quadprog";
 import * as curves from "./curves";
@@ -14,7 +13,8 @@ import { Rect } from "./rects";
 /** Minimize 0.5 x' q x - d' x st. a' x >= b
  *
  * Where x, d, b are vectors and q, a are matrices. This is just a wrapper
- * around quadprog to make it easier to call. */
+ * around quadprog to make it easier to call.
+ */
 function minqp(q: number[][], d: number[], a: number[][], b: number[]): number[] {
   // make arrays 1 indexed
   q = [[0]].concat(q.map(r => [0].concat(r)));
@@ -46,13 +46,13 @@ export function space1(elements: [number, number][]): number[] {
     .sort((a, b) => elements[a][0] - elements[b][0]);
 
   // setup constraints
-  const q = new Array(elements.length).fill(null).map((_, i) => {
+  const q = new Array(elements.length).fill(undefined).map((_, i) => {
     const row = new Array(elements.length).fill(0);
     row[i] = 1;
     return row;
   });
   const d = order.map(i => elements[i][0]);
-  const a = new Array(elements.length).fill(null).map((_, i) => {
+  const a = new Array(elements.length).fill(undefined).map((_, i) => {
     const row = new Array(elements.length - 1).fill(0);
     if (i < elements.length - 1) {
       row[i] = -1;
@@ -76,7 +76,7 @@ function pointsToArray(pointArray: [number, number][]): number[] {
 }
 
 function arrayToPoints(array: number[]): [number, number][] {
-  const pointArray = new Array(array.length / 2).fill(null).map(_ => [0, 0] as [number, number]);
+  const pointArray = new Array(array.length / 2).fill(undefined).map(_ => [0, 0] as [number, number]);
   array.forEach((c, i) => pointArray[Math.floor(i / 2)][i % 2] = c);
   return pointArray;
 }
@@ -85,7 +85,7 @@ function arrayToPoints(array: number[]): [number, number][] {
 function initGenerator(bbox: Rect, boxes: [number, number][], curvez: Curve[], buffer: number) {
   let valid = [rects.to.poly(bbox)];
   curvez.forEach(curve => curves.to.lines(curve).forEach(line => {
-    const diff = lines.to.poly(line, {cap: 'square', width: buffer});
+    const diff = lines.to.poly(line, {cap: "square", width: buffer});
     valid = ([] as Poly[]).concat(...valid.map(vals => polys.difference(vals, diff)));
   }));
   const labelPolys = boxes.map(([width, height]) => {
@@ -135,7 +135,7 @@ export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], o
 
   function loss(array: number[], grad?: number[]): number {
     // TODO Add gradient and use conjugate gradient
-    //grad = grad || points.slice();
+    // grad = grad || points.slice();
     // FIXME Change name from grouped
     const grouped = arrayToPoints(array);
     // dist between each label and each line
@@ -162,7 +162,7 @@ export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], o
                .map(p => rects.dist.point(bbox, p))) ** 2
     ));
     // penalty for being too close to any line
-    const linePenalty = utils.sum(dists.map(ds => Math.max(0, lineBuffer - 
+    const linePenalty = utils.sum(dists.map(ds => Math.max(0, lineBuffer -
       Math.min(...ds)) ** 2));
     // all penalties
     return distToLines + wSpread * distBetween + wOther * distToOthers + (

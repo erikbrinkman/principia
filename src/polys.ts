@@ -1,13 +1,12 @@
-'use strict';
-import * as points from "./points";
 import * as lines from "./lines";
+import * as points from "./points";
 import * as rects from "./rects";
 import * as turf from "@turf/helpers";
 import * as tdifference from "@turf/difference";
 import * as tintersect from "@turf/intersect";
 import * as tunion from "@turf/union";
-import { Point } from "./points";
 import { Line } from "./lines";
+import { Point } from "./points";
 import { Rect } from "./rects";
 
 export type Poly = Point[];
@@ -68,7 +67,7 @@ export const to = {
     });
     return [minx, miny, maxx - minx, maxy - miny];
   },
-}
+};
 
 export const contains = {
   point: (poly: Poly, point: Point, options?: {tol?: number}): boolean => {
@@ -80,7 +79,7 @@ export const contains = {
     }, false);
     return inside || linez.some(line => lines.contains.point(line, point, options));
   },
-}
+};
 
 export const random = {
   point: (poly: Poly): Point => {
@@ -92,7 +91,7 @@ export const random = {
       }
     }
   },
-}
+};
 
 function convertPoly(coords: Point[][]): Poly {
   if (coords.length === 1) {
@@ -111,9 +110,9 @@ function wrapTurf(func: any): (a: Poly, b: Poly) => Poly[] {
     const res = func(t1, t2);
     if (!res) {
       return [];
-    } else if (res.geometry.type === 'Polygon') {
+    } else if (res.geometry.type === "Polygon") {
       return [convertPoly(res.geometry.coordinates)];
-    } else if (res.geometry.type === 'MultiPolygon') {
+    } else if (res.geometry.type === "MultiPolygon") {
       return res.geometry.coordinates.map((coords: Point[][]) => convertPoly(coords));
     }
   };

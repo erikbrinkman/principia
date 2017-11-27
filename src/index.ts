@@ -1,3 +1,4 @@
+// FIXME Destructure some functions in argument
 import * as d3 from "d3";
 import * as backend from "./backend";
 
@@ -90,7 +91,6 @@ export class LinePlot {
   private _yTickPadding: number;
   private _xTickPadding: number;
   private _labelBuffer: number;
-  private _sideLabels: boolean;
 
   constructor(width?: number, height?: number) {
     this._width = width || 162;
@@ -115,7 +115,6 @@ export class LinePlot {
     this._yTickPadding = 0;
     this._xTickPadding = 0;
     this._labelBuffer = 1;
-    this._sideLabels = false;
   }
 
   // FIXME Change any to generic type
@@ -258,11 +257,18 @@ export class LinePlot {
     return this;
   }
 
-  labels(options?: {buffer?: number, side?: boolean}): this {
+
+  test3() {
+    // FIXME Remove
+    const a: { x?: number; } = { };
+    let y = 0;
+    ({ x:y = 1 } = a); // error: Type 'number | undefined' is not assignable to 'number'.
+  }
+
+
+  labels(options: {buffer?: number} = {}): this {
     // FIXME Default with current values / assign from destructuring
-    const { buffer = 1, side = false } = options || {};
-    this._labelBuffer = buffer;
-    this._sideLabels = side;
+    ({ buffer:this._labelBuffer = this._labelBuffer } = options);
     return this;
   }
 
@@ -394,29 +400,15 @@ export class LinePlot {
 
     // align line labels
     if (this._lines.some(line => line.label().length > 0)) {
-      if (this._sideLabels) {
-        const targets = this._lines.map(line => y(line.data()[line.data().length - 1][1]));
-        const input = labels.map((label, i) => {
-          const height = (label.node() as SVGSVGElement).getBBox().height;
-          return [targets[i] - height / 2, height] as [number, number];
-        });
-        const pos = backend.space1(input);
-        labels.forEach((label, i) => {
-          label.attr("x", this._width + this._labelBuffer).attr("y", pos[i] + input[i][1]);
-        });
-      } else {
-        const boxes = labels.map(label => {
-          const rect = (label.node() as SVGSVGElement).getBBox();
-          return [rect.width, rect.height] as [number, number];
-        });
-        const lines = this._lines.map(line => line.data().map(([xi, yi]) => [x(xi), y(yi)] as [number, number]));
-        const res = backend.space2([0, 0, this._width, this._height], boxes, lines,
-                                   {lineBuffer: this._labelBuffer});
-        labels.forEach((label, i) => {
-          const [x, y] = res[i];
-          label.attr("x", x).attr("y", y + boxes[i][1]);
-        });
-      }
+      const targets = this._lines.map(line => y(line.data()[line.data().length - 1][1]));
+      const input = labels.map((label, i) => {
+        const height = (label.node() as SVGSVGElement).getBBox().height;
+        return [targets[i] - height / 2, height] as [number, number];
+      });
+      const pos = backend.space1(input);
+      labels.forEach((label, i) => {
+        label.attr("x", this._width + this._labelBuffer).attr("y", pos[i] + input[i][1]);
+      });
     }
     return svg.node();
   }

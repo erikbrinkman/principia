@@ -1,6 +1,11 @@
 "use strict";
 import * as points from "./points";
 import * as rects from "./rects";
+import { Point } from "./points";
+import { Rect } from "./rects";
+import { Poly } from "./polys";
+
+export type Line = [Point, Point];
 
 // XXX Helper function if point is in rectangle defined by line
 function rectContainsPoint(line: Line, point: Point, options?: {}): boolean {

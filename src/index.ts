@@ -1,6 +1,8 @@
 import * as d3 from "d3";
 import * as backend from "./backend";
 
+type Point = [number, number];
+
 class Line {
   private readonly _data: Point[];
   private _class: string;

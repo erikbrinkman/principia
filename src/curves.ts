@@ -1,6 +1,11 @@
 "use strict";
 import * as lines from "./lines";
 import * as rects from "./rects";
+import { Point } from "./points";
+import { Line } from "./lines";
+import { Rect } from "./rects";
+
+export type Curve = Point[];
 
 export const to = {
   lines: (curve: Curve): Line[] => {

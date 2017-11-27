@@ -1,5 +1,10 @@
 "use strict";
 import * as lines from "./lines"
+import { Point } from "./points";
+import { Line } from "./lines";
+import { Poly } from "./polys";
+
+export type Rect = [number, number, number, number];
 
 export function area(rect: Rect): number {
   return rect[2] * rect[3];

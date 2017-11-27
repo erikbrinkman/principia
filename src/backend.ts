@@ -7,6 +7,8 @@ import * as rects from "./rects";
 import * as curves from "./curves";
 import * as polys from "./polys";
 import * as utils from "./utils";
+import { Rect } from "./rects";
+import { Curve } from "./curves";
 
 /** Minimize 0.5 x' q x - d' x st. a' x >= b
  *

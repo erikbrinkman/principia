@@ -6,6 +6,11 @@ import * as turf from "@turf/helpers";
 import * as tdifference from "@turf/difference";
 import * as tintersect from "@turf/intersect";
 import * as tunion from "@turf/union";
+import { Point } from "./points";
+import { Line } from "./lines";
+import { Rect } from "./rects";
+
+export type Poly = Point[];
 
 // FIXME Remove turf
 

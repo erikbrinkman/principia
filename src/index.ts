@@ -2,25 +2,16 @@ import * as d3 from "d3";
 import * as backend from "./backend";
 
 type Point = [number, number];
+// FIXME Add type aliases for d3 types
 
-// FIXME Make implement interface
-class Line {
-  private readonly _data: Point[];
+// FIXME Better name
+abstract class Thing {
   private _class: string;
   private _label: string;
-  private _curve: d3.CurveFactory;
-  private _point?: d3.Symbol<any, any>;
 
-  constructor(data: Point[]) {
-    this._data = data;
+  constructor() {
     this._class = "";
     this._label = "";
-    this._curve = d3.curveLinear;
-    this._point = undefined;
-  }
-
-  data(): Point[] {
-    return this._data;
   }
 
   classed(): string;
@@ -45,6 +36,28 @@ class Line {
     }
   }
 
+  // FIXME Make this a property in 2.7 or later
+  abstract target(): number;
+  abstract plot(svg: d3.Selection<d3.BaseType, {}, null, undefined>, x: d3.ScaleContinuousNumeric<number, number>, y: d3.ScaleContinuousNumeric<number, number>): void;
+}
+
+// FIXME Make implement interface
+class Line extends Thing {
+  private readonly _data: Point[];
+  private _curve: d3.CurveFactory;
+  private _point?: d3.Symbol<any, any>;
+
+  constructor(data: Point[]) {
+    super();
+    this._data = data;
+    this._curve = d3.curveLinear;
+    this._point = undefined;
+  }
+
+  data(): Point[] {
+    return this._data;
+  }
+
   curve(): d3.CurveFactory;
   curve(cve: d3.CurveFactory): this;
   curve(cve?: d3.CurveFactory): d3.CurveFactory | this {
@@ -64,6 +77,32 @@ class Line {
     } else {
       this._point = pt;
       return this;
+    }
+  }
+
+  target(): number {
+    return this._data[this._data.length - 1][1];
+  }
+
+  plot(svg: d3.Selection<d3.BaseType, {}, null, undefined>, x: d3.ScaleContinuousNumeric<number, number>, y: d3.ScaleContinuousNumeric<number, number>): void {
+    // TODO Truncate data if it goes outside of bounds
+    const path = d3.line()
+      .x(d => x(d[0]))
+      .y(d => y(d[1]))
+      .curve(this.curve())(this.data());
+    if (path !== null) {
+      svg.append("g").classed("line", true)
+        .append("path").classed(this.classed(), true)
+        .attr("d", path.toString());
+    }
+    const point = this.point();
+    if (point !== undefined) {
+      svg.append("g").classed("point", true)
+        .append("g").classed(this.classed(), true)
+        .selectAll("path").data(this.data()).enter()
+        .append("path")
+        .attr("transform", ([px, py]: Point) => `translate(${x(px)}, ${y(py)})`)
+        .attr("d", point.toString());
     }
   }
 }
@@ -326,27 +365,7 @@ export class LinePlot {
       .text(line.label()));
 
     // lines
-    // TODO Truncate data if it goes outside of bounds
-    this._lines.forEach(line => {
-      const path = d3.line()
-        .x(d => x(d[0]))
-        .y(d => y(d[1]))
-        .curve(line.curve())(line.data());
-      if (path !== null) {
-        svg.append("g").classed("line", true)
-          .append("path").classed(line.classed(), true)
-          .attr("d", path.toString());
-      }
-      const point = line.point();
-      if (point !== undefined) {
-        svg.append("g").classed("point", true)
-          .append("g").classed(line.classed(), true)
-          .selectAll("path").data(line.data()).enter()
-          .append("path")
-          .attr("transform", ([px, py]) => `translate(${x(px)}, ${y(py)})`)
-          .attr("d", point.toString());
-      }
-    });
+    this._lines.forEach(line => line.plot(svg, x, y));
 
     // space apart y ticks
     const yTicks = yAxis.selectAll("text").nodes() as HTMLElement[];
@@ -395,7 +414,7 @@ export class LinePlot {
     // FIXME Only align non empty labels
     // align line labels
     if (this._lines.some(line => line.label().length > 0)) {
-      const targets = this._lines.map(line => y(line.data()[line.data().length - 1][1]));
+      const targets = this._lines.map(line => y(line.target()));
       const input = labels.map((label, i) => {
         const height = (label.node() as SVGSVGElement).getBBox().height;
         return [targets[i] - height / 2, height] as [number, number];

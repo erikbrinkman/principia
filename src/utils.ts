@@ -20,7 +20,6 @@ export function randomIntWeighted(weights: number[]): () => number {
     const rand = Math.random();
     // TODO Could be made faster with binary search (loDash?)
     // XXX loDash also provides mean and sum
-    // FIXME This looks wrong
     return thresh.findIndex(t => rand <= t);
   };
 }

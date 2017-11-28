@@ -1,15 +1,15 @@
-// FIXME Destructure some functions in argument
 import * as d3 from "d3";
 import * as backend from "./backend";
 
 type Point = [number, number];
 
+// FIXME Make implement interface
 class Line {
   private readonly _data: Point[];
   private _class: string;
   private _label: string;
-  private _curve: any; // FIXME
-  private _point: any | null; // FIXME
+  private _curve: d3.CurveFactory;
+  private _point?: d3.Symbol<any, any>;
 
   constructor(data: Point[]) {
     this._data = data;
@@ -45,9 +45,9 @@ class Line {
     }
   }
 
-  curve(): any;
-  curve(cve: any): this;
-  curve(cve?: any): any | this { // FIXME
+  curve(): d3.CurveFactory;
+  curve(cve: d3.CurveFactory): this;
+  curve(cve?: d3.CurveFactory): d3.CurveFactory | this {
     if (cve === undefined) {
       return this._curve;
     } else {
@@ -56,9 +56,9 @@ class Line {
     }
   }
 
-  point(): any;
-  point(pt: any): this;
-  point(pt?: any): any | this { // FIXME
+  point(): d3.Symbol<any, any> | undefined;
+  point(pt: d3.Symbol<any, any>): this;
+  point(pt?: d3.Symbol<any, any>): d3.Symbol<any, any> | this | undefined {
     if (pt === undefined) {
       return this._point;
     } else {
@@ -81,8 +81,8 @@ export class LinePlot {
   private _yMinSet: boolean;
   private _yMax: number;
   private _yMaxSet: boolean;
-  private _xScale: any; // FIXME
-  private _yScale: any; // FIXME
+  private _xScale: d3.ScaleContinuousNumeric<number, number>;
+  private _yScale: d3.ScaleContinuousNumeric<number, number>;
   private _xLabel: string;
   private _yLabel: string;
   private _xTicks: number[];
@@ -117,22 +117,22 @@ export class LinePlot {
     this._labelBuffer = 1;
   }
 
-  // FIXME Change any to generic type
-  line(data: any[], options?: {x?: (i: any) => number, y?: (i: any) => number}): Line {
+  line(data: [number, number][], options: {x?: (d: [number, number], i: number) => number, y?: (d: [number, number], i: number) => number}): Line;
+  line<D>(data: D[], options: {x: (d: D, i: number) => number, y: (d: D, i: number) => number}): Line;
+  line(data: any[], options: {x?: (d: any, i: number) => number, y?: (d: any, i: number) => number} = {}): Line {
     const {
-      x = (d: any) => d[0],
-      y = (d: any) => d[1],
-    } = options || {};
-    data = data.map(d => {
-      const xi = x(d);
-      const yi = y(d);
+      x = (d: any, i: number) => d[0],
+      y = (d: any, i: number) => d[1],
+    } = options;
+    const line = new Line(data.map((d, i) => {
+      const xi = x(d, i);
+      const yi = y(d, i);
       this._xMinSet || (this._xMin = Math.min(this._xMin, xi));
       this._xMaxSet || (this._xMax = Math.max(this._xMax, xi));
       this._yMinSet || (this._yMin = Math.min(this._yMin, yi));
       this._yMaxSet || (this._yMax = Math.max(this._yMax, yi));
-      return [xi, yi];
-    });
-    const line = new Line(data);
+      return [xi, yi] as [number, number];
+    }));
     this._lines.push(line);
     return line;
   }
@@ -231,8 +231,8 @@ export class LinePlot {
     }
   }
 
-  xlabel(label: string, options?: {below?: boolean}): this {
-    const { below = false } = options || {};
+  xlabel(label: string, options: {below?: boolean} = {}): this {
+    const { below = this._xLabelBelow } = options;
     this._xLabel = label;
     this._xLabelBelow = below;
     return  this;
@@ -243,36 +243,28 @@ export class LinePlot {
     return this;
   }
 
-  xticks(ticks: number[], options?: {padding?: number}): this {
-    const { padding = 0 } = options || {};
+  xticks(ticks: number[], options: {padding?: number} = {}): this {
+    const { padding = this._xTickPadding } = options;
     this._xTicks = ticks;
     this._xTickPadding = padding;
     return this;
   }
 
-  yticks(ticks: number[], options?: {padding?: number}): this {
-    const { padding = 0 } = options || {};
+  yticks(ticks: number[], options: {padding?: number} = {}): this {
+    const { padding = this._yTickPadding } = options;
     this._yTicks = ticks;
     this._yTickPadding = padding;
     return this;
   }
 
-
-  test3() {
-    // FIXME Remove
-    const a: { x?: number; } = { };
-    let y = 0;
-    ({ x:y = 1 } = a); // error: Type 'number | undefined' is not assignable to 'number'.
-  }
-
-
   labels(options: {buffer?: number} = {}): this {
-    // FIXME Default with current values / assign from destructuring
-    ({ buffer:this._labelBuffer = this._labelBuffer } = options);
+    // TODO This should be possible in one line, but seems like a bug
+    const { buffer = this._labelBuffer } = options;
+    this._labelBuffer = buffer;
     return this;
   }
 
-  plot(svgElement: any): any { // FIXME
+  plot(svgElement: SVGSVGElement): void {
     /** Returns bbox without transformations */
     function getBBox(element: any): {x: number, y: number, width: number, height: number} {
       const ctm = svgElement.getScreenCTM().inverse();
@@ -335,22 +327,24 @@ export class LinePlot {
 
     // lines
     // TODO Truncate data if it goes outside of bounds
-    const lineGroup = svg.append("g").classed("line", true);
-    const pointGroup = svg.append("g").classed("point", true);
     this._lines.forEach(line => {
-      const lineDef = d3.line()
+      const path = d3.line()
         .x(d => x(d[0]))
         .y(d => y(d[1]))
-        .curve(line.curve());
-      lineGroup.append("path")
-        .classed(line.classed(), true)
-        .attr("d", lineDef(line.data()) as string);
-      if (line.point()) {
-        pointGroup.append("g").classed(line.classed(), true)
+        .curve(line.curve())(line.data());
+      if (path !== null) {
+        svg.append("g").classed("line", true)
+          .append("path").classed(line.classed(), true)
+          .attr("d", path.toString());
+      }
+      const point = line.point();
+      if (point !== undefined) {
+        svg.append("g").classed("point", true)
+          .append("g").classed(line.classed(), true)
           .selectAll("path").data(line.data()).enter()
           .append("path")
           .attr("transform", ([px, py]) => `translate(${x(px)}, ${y(py)})`)
-          .attr("d", line.point());
+          .attr("d", point.toString());
       }
     });
 
@@ -398,6 +392,7 @@ export class LinePlot {
     const topYBBox = getBBox(yAxis.selectAll("text").nodes()[1]);
     yAxisLabel.attr("x", topYBBox.x).attr("y", topYBBox.y);
 
+    // FIXME Only align non empty labels
     // align line labels
     if (this._lines.some(line => line.label().length > 0)) {
       const targets = this._lines.map(line => y(line.data()[line.data().length - 1][1]));
@@ -410,6 +405,5 @@ export class LinePlot {
         label.attr("x", this._width + this._labelBuffer).attr("y", pos[i] + input[i][1]);
       });
     }
-    return svg.node();
   }
 }

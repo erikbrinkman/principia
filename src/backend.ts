@@ -120,7 +120,7 @@ interface PlaceLabelOpts {
   wOther?: number;
 }
 
-export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], options?: PlaceLabelOpts) {
+export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], options: PlaceLabelOpts = {}) {
   // unpack options
   const {
     restarts = 10,
@@ -128,7 +128,7 @@ export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], o
     lineBuffer = 1,
     wSpread = -0.1,
     wOther = -0.2,
-  } = options || {};
+  } = options;
 
   // define loss function
   let penalty: number;
@@ -175,11 +175,11 @@ export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], o
   // find best over several random restarts
   let best: number[] = [];
   let bestLoss = Infinity;
-  for (let _ = 0; _ < restarts; ++_) {
+  for (let i = 0; i < restarts; ++i) {
     let init = pointsToArray(gen());
     penalty = 1;
     // Slowly increase penalty for violating soft constraints
-    for (let __ = 0; __ < penaltyIncs; ++__) {
+    for (let j = 0; j < penaltyIncs; ++j) {
       init = fmin.nelderMead(loss, init).x;
       penalty *= 2;
     }

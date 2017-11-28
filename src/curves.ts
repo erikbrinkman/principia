@@ -23,7 +23,7 @@ export const dist = {
 };
 
 export const intersect = {
-  rect: (curve: Curve, rect: Rect, options?: {tol?: number}): boolean => {
+  rect: (curve: Curve, rect: Rect, options: {tol?: number} = {}): boolean => {
     return to.lines(curve).some(line => rects.intersect.line(rect, line, options));
   },
 };

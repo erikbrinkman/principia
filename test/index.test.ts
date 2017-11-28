@@ -7,12 +7,12 @@ import * as rects from "../src/rects";
 
 describe('principia', () => {
   it('executes the example', done => {
-    cp.exec('node node_modules/headlesspdf/cmd.js -i test/ex.js -c test/ex.css',
+    cp.exec('node node_modules/headlesspdf/cmd.js -i test/ex.js -c test/ex.css -o test/ex.pdf',
       (err, stdout, stderr) => {
         if (err) {
           done.fail(stderr);
         } else {
-          // FIXME Test stdout for appropriate elements?
+          // FIXME Test that result matches what we expect
           done();
         }
     });

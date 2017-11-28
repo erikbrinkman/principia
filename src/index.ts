@@ -6,8 +6,8 @@ type Point = [number, number];
 
 // FIXME Better name
 abstract class Thing {
-  private _class: string;
-  private _label: string;
+  protected _class: string;
+  protected _label: string;
 
   constructor() {
     this._class = "";
@@ -85,24 +85,24 @@ class Line extends Thing {
   }
 
   plot(svg: d3.Selection<SVGSVGElement, any, any, any>, x: d3.ScaleContinuousNumeric<number, number>, y: d3.ScaleContinuousNumeric<number, number>): void {
+    // FIXME Do we need data to be accessible by getter or can we just access them privately here
     // TODO Truncate data if it goes outside of bounds
     const path = d3.line()
       .x(d => x(d[0]))
       .y(d => y(d[1]))
-      .curve(this.curve())(this.data());
+      .curve(this._curve)(this._data);
     if (path !== null) {
       svg.append("g").classed("line", true)
-        .append("path").classed(this.classed(), true)
+        .append("path").classed(this._class, true)
         .attr("d", path.toString());
     }
-    const point = this.point();
-    if (point !== undefined) {
+    if (this._point !== undefined) {
       svg.append("g").classed("point", true)
-        .append("g").classed(this.classed(), true)
-        .selectAll("path").data(this.data()).enter()
+        .append("g").classed(this._class, true)
+        .selectAll("path").data(this._data).enter()
         .append("path")
         .attr("transform", ([px, py]: Point) => `translate(${x(px)}, ${y(py)})`)
-        .attr("d", point.toString());
+        .attr("d", this._point);
     }
   }
 }

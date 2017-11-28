@@ -1,7 +1,11 @@
 import * as d3 from "d3";
 import * as backend from "./backend";
 
+// TODO Move poly stuff into separate library
+// TODO Split this into the necessary backend and each chart type
+
 type Point = [number, number];
+type APoint = [number, number, number];
 type PlotSelect = d3.Selection<SVGSVGElement, any, any, any>;
 type AxisSelect = d3.Selection<d3.AxisContainerElement, {}, null, undefined>;
 type Scale = d3.ScaleContinuousNumeric<number, number>;
@@ -9,10 +13,14 @@ type Scale = d3.ScaleContinuousNumeric<number, number>;
 abstract class LinePlotElement {
   protected _class: string;
   protected _label: string;
+  protected _curve: d3.CurveFactory;
+  protected _point?: d3.Symbol<any, any>;
 
   constructor() {
     this._class = "";
     this._label = "";
+    this._curve = d3.curveLinear;
+    this._point = undefined;
   }
 
   classed(): string;
@@ -32,26 +40,10 @@ abstract class LinePlotElement {
     if (lab === undefined) {
       return this._label;
     } else {
+      // TODO Check certain things about labels, i.e. only whitespace is space
       this._label = lab;
       return this;
     }
-  }
-
-  // TODO Make this a property in typescript 2.7 or later
-  abstract target(): number;
-  abstract plot(svg: PlotSelect, x: Scale, y: Scale): void;
-}
-
-class Line extends LinePlotElement {
-  private readonly _data: Point[];
-  private _curve: d3.CurveFactory;
-  private _point?: d3.Symbol<any, any>;
-
-  constructor(data: Point[]) {
-    super();
-    this._data = data;
-    this._curve = d3.curveLinear;
-    this._point = undefined;
   }
 
   curve(): d3.CurveFactory;
@@ -76,6 +68,19 @@ class Line extends LinePlotElement {
     }
   }
 
+  // TODO Make this a property in typescript 2.7 or later
+  abstract target(): number;
+  abstract plot(svg: PlotSelect, x: Scale, y: Scale): void;
+}
+
+class Line extends LinePlotElement {
+  private readonly _data: Point[];
+
+  constructor(data: Point[]) {
+    super();
+    this._data = data;
+  }
+
   target(): number {
     return this._data[this._data.length - 1][1];
   }
@@ -89,7 +94,7 @@ class Line extends LinePlotElement {
     if (path !== null) {
       svg.append("g").classed("line", true)
         .append("path").classed(this._class, true)
-        .attr("d", path.toString());
+        .attr("d", path);
     }
     if (this._point !== undefined) {
       svg.append("g").classed("point", true)
@@ -102,11 +107,49 @@ class Line extends LinePlotElement {
   }
 }
 
+class Area extends LinePlotElement {
+  private readonly _data: APoint[];
+
+  constructor(data: APoint[]) {
+    super();
+    this._data = data;
+  }
+
+  target(): number {
+    const [, low, high] = this._data[this._data.length - 1];
+    return (low + high) / 2;
+  }
+
+  plot(svg: PlotSelect, x: Scale, y: Scale): void {
+    // TODO Truncate data if it goes outside of bounds
+    const path = d3.area()
+      .x(d => x(d[0]))
+      .y0(d => y(d[1]))
+      .y1(d => y(d[2]))
+      .curve(this._curve)(this._data);
+    if (path !== null) {
+      svg.append("g").classed("area", true)
+        .append("path").classed(this._class, true)
+        .attr("d", path);
+    }
+    if (this._point !== undefined) {
+      const pointData = this._data.map(([x, y, ]) => [x, y] as Point).concat(
+        this._data.map(([x, , y]) => [x, y] as Point));
+      svg.append("g").classed("point", true)
+        .append("g").classed(this._class, true)
+        .selectAll("path").data(pointData).enter()
+        .append("path")
+        .attr("transform", ([px, py]: Point) => `translate(${x(px)}, ${y(py)})`)
+        .attr("d", this._point);
+    }
+  }
+}
+
 export class LinePlot {
   // FIXME Add axis tick formatting
   private _width: number;
   private _height: number;
-  private _lines: Line[];
+  private _lines: LinePlotElement[];
   private _xMin: number;
   private _xMinSet: boolean;
   private _xMax: number;
@@ -151,7 +194,7 @@ export class LinePlot {
     this._labelBuffer = 1;
   }
 
-  line(data: [number, number][], options: {x?: (d: [number, number], i: number) => number, y?: (d: [number, number], i: number) => number}): Line;
+  line(data: Point[], options: {x?: (d: Point, i: number) => number, y?: (d: Point, i: number) => number}): Line;
   line<D>(data: D[], options: {x: (d: D, i: number) => number, y: (d: D, i: number) => number}): Line;
   line(data: any[], options: {x?: (d: any, i: number) => number, y?: (d: any, i: number) => number} = {}): Line {
     const {
@@ -165,10 +208,32 @@ export class LinePlot {
       this._xMaxSet || (this._xMax = Math.max(this._xMax, xi));
       this._yMinSet || (this._yMin = Math.min(this._yMin, yi));
       this._yMaxSet || (this._yMax = Math.max(this._yMax, yi));
-      return [xi, yi] as [number, number];
+      return [xi, yi] as Point;
     }));
     this._lines.push(line);
     return line;
+  }
+
+  area(data: APoint[], options: {x?: (d: APoint, i: number) => number, y0?: (d: APoint, i: number) => number, y1?: (d: APoint, i: number) => number}): Area;
+  area<D>(data: D[], options: {x: (d: D, i: number) => number, y0: (d: D, i: number) => number, y1: (d: D, i: number) => number}): Area;
+  area(data: any[], options: {x?: (d: any, i: number) => number, y0?: (d: any, i: number) => number, y1?: (d: any, i: number) => number} = {}): Area {
+    const {
+      x = (d: any, _: number) => d[0],
+      y0 = (d: any, _: number) => d[1],
+      y1 = (d: any, _: number) => d[2],
+    } = options;
+    const area = new Area(data.map((d, i) => {
+      const xi = x(d, i);
+      const y0i = y0(d, i);
+      const y1i = y1(d, i);
+      this._xMinSet || (this._xMin = Math.min(this._xMin, xi));
+      this._xMaxSet || (this._xMax = Math.max(this._xMax, xi));
+      this._yMinSet || (this._yMin = Math.min(this._yMin, y0i, y1i));
+      this._yMaxSet || (this._yMax = Math.max(this._yMax, y0i, y1i));
+      return [xi, y0i, y1i] as APoint;
+    }));
+    this._lines.push(area);
+    return area;
   }
 
   width(): number;
@@ -354,7 +419,8 @@ export class LinePlot {
 
     // labels
     const labelGroup = svg.append("g").classed("label", true);
-    const labels = this._lines.map(line => labelGroup
+    const labelLines = this._lines.filter(line => line.label().length > 0);
+    const labels = labelLines.map(line => labelGroup
       .append("text")
       .classed(line.classed(), true)
       .text(line.label()));
@@ -406,10 +472,9 @@ export class LinePlot {
     const topYBBox = getBBox(yAxis.selectAll("text").nodes()[1]);
     yAxisLabel.attr("x", topYBBox.x).attr("y", topYBBox.y);
 
-    // FIXME Only align non empty labels
     // align line labels
-    if (this._lines.some(line => line.label().length > 0)) {
-      const targets = this._lines.map(line => y(line.target()));
+    if (labels.length > 0) {
+      const targets = labelLines.map(line => y(line.target()));
       const input = labels.map((label, i) => {
         const height = (label.node() as SVGSVGElement).getBBox().height;
         return [targets[i] - height / 2, height] as [number, number];

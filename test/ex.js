@@ -7,6 +7,13 @@ const plot = new princ.LinePlot()
   .xticks([1])
   .yticks([2])
   .labels({side: true, buffer: 2});
+plot.area([[0, 0, 0],
+           [1, 1, 3],
+           [2, 5, 6],
+           [3, 2, 2]])
+  .classed('ar')
+  .curve(d3.curveNatural)
+  .point(d3.symbol().size(2).type(d3.symbolTriangle));
 plot.line([[0, 0],
            [1, 2],
            [2, 6],

@@ -11,7 +11,4 @@ This library is meant to work with d3 and at some point should provide methods f
 Todo
 ----
 
-- `turf` is a large dependency and geo focused.
-  It should probably be stripped out in favor of a more appropriate library.
 - Bar graphs.
-- Area charts (i.e. area between lines is filled in)

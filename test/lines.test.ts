@@ -70,33 +70,33 @@ describe('#to.poly()', () => {
 
   it('works for cap butt', () => {
     check(polys.equal(
-      lines.to.poly([[0, 0], [0, 1]], {cap: 'butt'}),
+      lines.to.poly([[0, 0], [0, 1]], {cap: lines.Cap.Butt}),
       [[-1, 0], [1, 0], [1, 1], [-1, 1]]));
     check(polys.equal(
-      lines.to.poly([[0, 0], [3, 4]], {width: 5, cap: 'butt'}),
+      lines.to.poly([[0, 0], [3, 4]], {width: 5, cap: lines.Cap.Butt}),
       [[-4, 3], [4, -3], [7, 1], [-1, 7]]));
   });
 
   it('works for cap square', () => {
     check(polys.equal(
-      lines.to.poly([[0, 0], [0, 1]], {cap: 'square'}),
+      lines.to.poly([[0, 0], [0, 1]], {cap: lines.Cap.Square}),
       [[-1, -1], [1, -1], [1, 2], [-1, 2]]));
     check(polys.equal(
-      lines.to.poly([[0, 0], [3, 4]], {width: 5, cap: 'square'}),
+      lines.to.poly([[0, 0], [3, 4]], {width: 5, cap: lines.Cap.Square}),
       [[-7, -1], [1, -7], [10, 5], [2, 11]]));
   });
 
   it('works for cap angle', () => {
     check(polys.equal(
-      lines.to.poly([[0, 0], [0, 1]], {cap: 'angle'}),
+      lines.to.poly([[0, 0], [0, 1]], {cap: lines.Cap.Angle}),
       [[-1, 0], [0, -1], [1, 0], [1, 1], [0, 2], [-1, 1]]));
     check(polys.equal(
-      lines.to.poly([[0, 0], [3, 4]], {width: 5, cap: 'angle'}),
+      lines.to.poly([[0, 0], [3, 4]], {width: 5, cap: lines.Cap.Angle}),
       [[-4, 3], [-3, -4], [4, -3], [7, 1], [6, 8], [-1, 7]]));
   });
 
   it('throws for unknown cap', () => {
-    check.throws(() => lines.to.poly([[0, 0], [0, 1]], {cap: 'foo'}));
+    check.throws(() => lines.to.poly([[0, 0], [0, 1]], {cap: -1}));
   });
 });
 

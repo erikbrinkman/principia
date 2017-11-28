@@ -89,8 +89,9 @@ export namespace dist {
 }
 
 export namespace intersect {
-  // FIXME Change to function
-  export const point = contains.point;
+  export function point(rect: Rect, point: Point, options: {} = {}) {
+    return contains.point(rect, point, options);
+  }
 
   export function line(rect: Rect, line: Line, options: {} = {}): boolean {
     return contains.line(rect, line, options) || to.lines(rect).some(other => lines.intersect.line(line, other, options));

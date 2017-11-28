@@ -74,31 +74,36 @@ export namespace intersect {
   }
 }
 
+export enum Cap {
+  Butt,
+  Square,
+  Angle,
+}
+
 export namespace to {
-  // FIXME Change cap to enum?
-  export function poly([[l1x, l1y], [l2x, l2y]]: Line, options: {cap?: string, width?: number} = {}): Poly {
-    const { cap = "butt", width = 1 } = options;
+  export function poly([[l1x, l1y], [l2x, l2y]]: Line, options: {cap?: Cap, width?: number} = {}): Poly {
+    const { cap = Cap.Butt, width = 1 } = options;
     let vx = l2x - l1x;
     let vy = l2y - l1y;
     const mag = Math.sqrt(vx ** 2 + vy ** 2) / width;
     vx /= mag;
     vy /= mag;
     switch (cap) {
-      case "butt":
+      case Cap.Butt:
         return [
           [l1x - vy, l1y + vx],
           [l1x + vy, l1y - vx],
           [l2x + vy, l2y - vx],
           [l2x - vy, l2y + vx],
         ];
-      case "square":
+      case Cap.Square:
         return [
           [l1x - vx - vy, l1y - vy + vx],
           [l1x - vx + vy, l1y - vy - vx],
           [l2x + vx + vy, l2y + vy - vx],
           [l2x + vx - vy, l2y + vy + vx],
         ];
-      case "angle":
+      case Cap.Angle:
         return [
           [l1x - vy, l1y + vx],
           [l1x - vx, l1y - vy],

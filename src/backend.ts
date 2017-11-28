@@ -85,7 +85,7 @@ function arrayToPoints(array: number[]): [number, number][] {
 function initGenerator(bbox: Rect, boxes: [number, number][], curvez: Curve[], buffer: number) {
   let valid = [rects.to.poly(bbox)];
   curvez.forEach(curve => curves.to.lines(curve).forEach(line => {
-    const diff = lines.to.poly(line, {cap: "square", width: buffer});
+    const diff = lines.to.poly(line, {cap: lines.Cap.Square, width: buffer});
     valid = ([] as Poly[]).concat(...valid.map(vals => polys.difference(vals, diff)));
   }));
   const labelPolys = boxes.map(([width, height]) => {
@@ -106,12 +106,7 @@ function initGenerator(bbox: Rect, boxes: [number, number][], curvez: Curve[], b
   return () => labelPolys.map((ps, i) => polys.random.point(ps[rands[i]()]));
 }
 
-/**
- *
- * @param {[{width: num, height: num, points: [[num, num]]}]} lines The
- * lines... FIXME
- */
-// TODO Make options that forces label xs or ys to be identical
+// TODO Make option that forces xs or ys to be identical
 interface PlaceLabelOpts {
   restarts?: number;
   penaltyIncs?: number;
@@ -120,6 +115,7 @@ interface PlaceLabelOpts {
   wOther?: number;
 }
 
+/** FIXME */
 export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], options: PlaceLabelOpts = {}) {
   // unpack options
   const {
@@ -136,28 +132,27 @@ export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], o
   function loss(array: number[], grad?: number[]): number {
     // TODO Add gradient and use conjugate gradient
     // grad = grad || points.slice();
-    // FIXME Change name from grouped
-    const grouped = arrayToPoints(array);
+    const point = arrayToPoints(array);
     // dist between each label and each line
     // TODO This is the slowest, and should be possible to speed up, i.e. we
     // don't need to actually compute the distance to every point, only the
     // nearest, which could be done via a nearest neighbor search. d3.quadtree?
-    const dists = grouped.map((pi, i) => {
+    const dists = point.map((pi, i) => {
       const rect = pi.concat(boxes[i]) as Rect;
       return curvez.map(curve => curves.dist.rect(curve, rect));
     });
     // dist between a label and its line
     const distToLines = utils.mean(dists.map((ds, i) => ds[i]));
     // dist between labels
-    const distBetween = utils.mean(([] as number[]).concat(...grouped.map((pi, i) =>
-      grouped.slice(i + 1).map(pj => points.dist.point(pi, pj))
+    const distBetween = utils.mean(([] as number[]).concat(...point.map((pi, i) =>
+      point.slice(i + 1).map(pj => points.dist.point(pi, pj))
     )));
     // dist to other lines
     const distToOthers = utils.mean(dists.map((ds, i) => ds.length > 1
       ? Math.min(...ds.slice(0, i).concat(ds.slice(i + 1)))
       : 0));
     // penalty for being outside of boundary
-    const boundaryPenalty = utils.sum(grouped.map((pi, i) =>
+    const boundaryPenalty = utils.sum(point.map((pi, i) =>
       Math.max(...rects.to.points(pi.concat(boxes[i]) as Rect)
                .map(p => rects.dist.point(bbox, p))) ** 2
     ));

@@ -11,8 +11,6 @@ import { Rect } from "./rects";
 
 export type Poly = Point[];
 
-// FIXME Remove turf
-
 export function area(poly: Poly): number {
   let area = 0;
   poly.forEach((curr, i) => {
@@ -46,15 +44,15 @@ export function rotate(poly: Poly, angle: number): Poly {
   ] as Point);
 }
 
-export const to = {
-  lines: (poly: Poly): Line[] => {
+export namespace to {
+  export function lines(poly: Poly): Line[] {
     return poly.map((curr, i) => {
       const next = poly[(i + 1) % poly.length];
       return [curr, next] as Line;
     });
-  },
+  }
 
-  rect: (poly: Poly): Rect => {
+  export function rect(poly: Poly): Rect {
     let minx = Infinity;
     let miny = Infinity;
     let maxx = -Infinity;
@@ -66,11 +64,11 @@ export const to = {
       maxy = Math.max(maxy, y);
     });
     return [minx, miny, maxx - minx, maxy - miny];
-  },
-};
+  }
+}
 
-export const contains = {
-  point: (poly: Poly, point: Point, options: {tol?: number} = {}): boolean => {
+export namespace contains {
+  export function point(poly: Poly, point: Point, options: {tol?: number} = {}): boolean {
     const linez = to.lines(poly);
     const inside = linez.reduce((ins, line) => {
       const orient = lines.orientation(line, point);
@@ -80,11 +78,11 @@ export const contains = {
         (py < l1y && l2y <= py && orient > 0))) !== ins;
     }, false);
     return inside || linez.some(line => lines.contains.point(line, point, options));
-  },
-};
+  }
+}
 
-export const random = {
-  point: (poly: Poly): Point => {
+export namespace random {
+  export function point(poly: Poly): Point {
     const rect = to.rect(poly);
     while (true) {
       const point = rects.random.point(rect);
@@ -92,8 +90,8 @@ export const random = {
         return point;
       }
     }
-  },
-};
+  }
+}
 
 function convertPoly(coords: Point[][]): Poly {
   if (coords.length === 1) {
@@ -120,6 +118,7 @@ function wrapTurf(func: any): (a: Poly, b: Poly) => Poly[] {
   };
 }
 
+// FIXME Remove turf
 export const union = wrapTurf(tunion);
 export const intersect = wrapTurf(tintersect);
 export const difference = wrapTurf(tdifference);

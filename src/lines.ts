@@ -31,14 +31,14 @@ export function equal([l1, l2]: Line, [o1, o2]: Line, options: {tol?: number} = 
     || (points.equal(l1, o2, options) && points.equal(l2, o1, options));
 }
 
-export const contains = {
-  point: (line: Line, point: Point, options: {tol?: number} = {}): boolean => {
+export namespace contains {
+  export function point(line: Line, point: Point, options: {tol?: number} = {}): boolean {
     return orientation(line, point, options) === 0 && rectContainsPoint(line, point, options);
-  },
-};
+  }
+}
 
-export const dist = {
-  point: ([[l1x, l1y], [l2x, l2y]]: Line, [px, py]: Point): number => {
+export namespace dist {
+  export function point([[l1x, l1y], [l2x, l2y]]: Line, [px, py]: Point): number {
     // TODO detect if line is degenerate
     const rx = px - l1x;
     const ry = py - l1y;
@@ -47,13 +47,15 @@ export const dist = {
     const c = (rx * lx + ry * ly) / (lx * lx + ly * ly);
     const u = Math.min(Math.max(0, c), 1);
     return Math.sqrt((rx - u * lx) ** 2 + (ry - u * ly) ** 2);
-  },
-};
+  }
+}
 
-export const intersect = {
-  point: contains.point,
+export namespace intersect {
+  export function point(line: Line, point: Point, options: {} = {}) {
+    return contains.point(line, point, options);
+  }
 
-  line: (line: Line, other: Line, options: {tol?: number} = {}): boolean => {
+  export function line(line: Line, other: Line, options: {tol?: number} = {}): boolean {
     const [l1, l2] = line;
     const [o1, o2] = other;
     // Find the four orientations
@@ -69,12 +71,12 @@ export const intersect = {
       || (or2 === 0 && rectContainsPoint(line, o2, options))
       || (or3 === 0 && rectContainsPoint(other, l1, options))
       || (or4 === 0 && rectContainsPoint(other, l2, options));
-  },
-};
+  }
+}
 
-export const to = {
+export namespace to {
   // FIXME Change cap to enum?
-  poly: ([[l1x, l1y], [l2x, l2y]]: Line, options: {cap?: string, width?: number} = {}): Poly => {
+  export function poly([[l1x, l1y], [l2x, l2y]]: Line, options: {cap?: string, width?: number} = {}): Poly {
     const { cap = "butt", width = 1 } = options;
     let vx = l2x - l1x;
     let vy = l2y - l1y;
@@ -108,27 +110,27 @@ export const to = {
       default:
         throw Error(`unknown cap: "${cap}"`);
     }
-  },
+  }
 
-  rect: ([[l1x, l1y], [l2x, l2y]]: Line): Rect => {
+  export function rect([[l1x, l1y], [l2x, l2y]]: Line): Rect {
     const maxx = Math.max(l1x, l2x);
     const minx = Math.min(l1x, l2x);
     const maxy = Math.max(l1y, l2y);
     const miny = Math.min(l1y, l2y);
     return [minx, miny, maxx - minx, maxy - miny];
-  },
+  }
 
-  points: (line: Line): Point[] => {
+  export function points(line: Line): Point[] {
     return line;
-  },
-};
+  }
+}
 
-export const random = {
-  point: ([[l1x, l1y], [l2x, l2y]]: Line): Point => {
+export namespace random {
+  export function point([[l1x, l1y], [l2x, l2y]]: Line): Point {
     const rand = Math.random();
     return [
       l1x + rand * (l2x - l1x),
       l1y + rand * (l2y - l1y),
     ];
-  },
-};
+  }
+}

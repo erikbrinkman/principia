@@ -14,7 +14,7 @@ export function equal(rect: Rect, other: Rect, options: {tol?: number} = {}): bo
   return rect.every((di, i) => Math.abs(di - other[i]) <= tol);
 }
 
-export function intersection(rect: Rect, other: Rect): never {
+export function intersection(_rect: Rect, _other: Rect): never {
   throw Error(); // FIXME
 }
 

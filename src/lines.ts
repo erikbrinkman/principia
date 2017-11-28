@@ -18,7 +18,7 @@ export function orientation([[l1x, l1y], [l2x, l2y]]: Line, [px, py]: Point, opt
   return Math.abs(val) <= tol ? 0 : Math.sign(val);
 }
 
-export function intersection(line: Line, other: Line): never {
+export function intersection(_line: Line, _other: Line): never {
   throw Error(); // FIXME
 }
 

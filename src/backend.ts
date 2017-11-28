@@ -129,7 +129,7 @@ export function space2(bbox: Rect, boxes: [number, number][], curvez: Curve[], o
   // define loss function
   let penalty: number;
 
-  function loss(array: number[], grad?: number[]): number {
+  function loss(array: number[], _grad?: number[]): number {
     // TODO Add gradient and use conjugate gradient
     // grad = grad || points.slice();
     const point = arrayToPoints(array);

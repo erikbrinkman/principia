@@ -38,7 +38,7 @@ abstract class Thing {
 
   // FIXME Make this a property in 2.7 or later
   abstract target(): number;
-  abstract plot(svg: d3.Selection<d3.BaseType, {}, null, undefined>, x: d3.ScaleContinuousNumeric<number, number>, y: d3.ScaleContinuousNumeric<number, number>): void;
+  abstract plot(svg: d3.Selection<SVGSVGElement, any, any, any>, x: d3.ScaleContinuousNumeric<number, number>, y: d3.ScaleContinuousNumeric<number, number>): void;
 }
 
 // FIXME Make implement interface
@@ -84,7 +84,7 @@ class Line extends Thing {
     return this._data[this._data.length - 1][1];
   }
 
-  plot(svg: d3.Selection<d3.BaseType, {}, null, undefined>, x: d3.ScaleContinuousNumeric<number, number>, y: d3.ScaleContinuousNumeric<number, number>): void {
+  plot(svg: d3.Selection<SVGSVGElement, any, any, any>, x: d3.ScaleContinuousNumeric<number, number>, y: d3.ScaleContinuousNumeric<number, number>): void {
     // TODO Truncate data if it goes outside of bounds
     const path = d3.line()
       .x(d => x(d[0]))
@@ -160,8 +160,8 @@ export class LinePlot {
   line<D>(data: D[], options: {x: (d: D, i: number) => number, y: (d: D, i: number) => number}): Line;
   line(data: any[], options: {x?: (d: any, i: number) => number, y?: (d: any, i: number) => number} = {}): Line {
     const {
-      x = (d: any, i: number) => d[0],
-      y = (d: any, i: number) => d[1],
+      x = (d: any, _: number) => d[0],
+      y = (d: any, _: number) => d[1],
     } = options;
     const line = new Line(data.map((d, i) => {
       const xi = x(d, i);
@@ -326,7 +326,7 @@ export class LinePlot {
       };
     }
 
-    const svg = d3.select(svgElement).append("g");
+    const svg: d3.Selection<SVGSVGElement, {}, null, undefined> = d3.select(svgElement).append("g");
     const x = this._xScale.range([0, this._width]).domain([this._xMin, this._xMax]);
     const y = this._yScale.range([this._height, 0]).domain([this._yMin, this._yMax]);
 
@@ -336,7 +336,7 @@ export class LinePlot {
       .tickSizeInner(-2).tickSizeOuter(0).tickPadding(5)
       .tickValues([...new Set([this._xMin, this._xMax].concat(this._xTicks))]);
     const xAxisGroup = axisGroup.append("g").classed("x", true);
-    const xAxis = xAxisGroup.append("g")
+    const xAxis = (xAxisGroup.append("g") as d3.Selection<d3.AxisContainerElement, {}, null, undefined>)
       .classed("ticks", true)
       .attr("transform", `translate(0, ${this._height + 5})`)
       .call(xAxisGen);
@@ -349,7 +349,7 @@ export class LinePlot {
     const yAxisGen = d3.axisLeft(y)
       .tickSizeInner(-2.5).tickSizeOuter(0).tickPadding(2)
       .tickValues([...new Set([this._yMin, this._yMax].concat(this._yTicks))]);
-    const yAxis = yAxisGroup.append("g")
+    const yAxis = (yAxisGroup.append("g") as d3.Selection<d3.AxisContainerElement, {}, null, undefined>)
       .attr("transform", "translate(-5, 0)")
       .call(yAxisGen);
     const yAxisLabel = yAxisGroup.append("g")

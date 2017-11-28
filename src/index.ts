@@ -2,10 +2,11 @@ import * as d3 from "d3";
 import * as backend from "./backend";
 
 type Point = [number, number];
-// FIXME Add type aliases for d3 types
+type PlotSelect = d3.Selection<SVGSVGElement, any, any, any>;
+type AxisSelect = d3.Selection<d3.AxisContainerElement, {}, null, undefined>;
+type Scale = d3.ScaleContinuousNumeric<number, number>;
 
-// FIXME Better name
-abstract class Thing {
+abstract class LinePlotElement {
   protected _class: string;
   protected _label: string;
 
@@ -36,13 +37,12 @@ abstract class Thing {
     }
   }
 
-  // FIXME Make this a property in 2.7 or later
+  // TODO Make this a property in typescript 2.7 or later
   abstract target(): number;
-  abstract plot(svg: d3.Selection<SVGSVGElement, any, any, any>, x: d3.ScaleContinuousNumeric<number, number>, y: d3.ScaleContinuousNumeric<number, number>): void;
+  abstract plot(svg: PlotSelect, x: Scale, y: Scale): void;
 }
 
-// FIXME Make implement interface
-class Line extends Thing {
+class Line extends LinePlotElement {
   private readonly _data: Point[];
   private _curve: d3.CurveFactory;
   private _point?: d3.Symbol<any, any>;
@@ -52,10 +52,6 @@ class Line extends Thing {
     this._data = data;
     this._curve = d3.curveLinear;
     this._point = undefined;
-  }
-
-  data(): Point[] {
-    return this._data;
   }
 
   curve(): d3.CurveFactory;
@@ -84,8 +80,7 @@ class Line extends Thing {
     return this._data[this._data.length - 1][1];
   }
 
-  plot(svg: d3.Selection<SVGSVGElement, any, any, any>, x: d3.ScaleContinuousNumeric<number, number>, y: d3.ScaleContinuousNumeric<number, number>): void {
-    // FIXME Do we need data to be accessible by getter or can we just access them privately here
+  plot(svg: PlotSelect, x: Scale, y: Scale): void {
     // TODO Truncate data if it goes outside of bounds
     const path = d3.line()
       .x(d => x(d[0]))
@@ -120,8 +115,8 @@ export class LinePlot {
   private _yMinSet: boolean;
   private _yMax: number;
   private _yMaxSet: boolean;
-  private _xScale: d3.ScaleContinuousNumeric<number, number>;
-  private _yScale: d3.ScaleContinuousNumeric<number, number>;
+  private _xScale: Scale;
+  private _yScale: Scale;
   private _xLabel: string;
   private _yLabel: string;
   private _xTicks: number[];
@@ -336,7 +331,7 @@ export class LinePlot {
       .tickSizeInner(-2).tickSizeOuter(0).tickPadding(5)
       .tickValues([...new Set([this._xMin, this._xMax].concat(this._xTicks))]);
     const xAxisGroup = axisGroup.append("g").classed("x", true);
-    const xAxis = (xAxisGroup.append("g") as d3.Selection<d3.AxisContainerElement, {}, null, undefined>)
+    const xAxis = (xAxisGroup.append("g") as AxisSelect)
       .classed("ticks", true)
       .attr("transform", `translate(0, ${this._height + 5})`)
       .call(xAxisGen);
@@ -349,7 +344,7 @@ export class LinePlot {
     const yAxisGen = d3.axisLeft(y)
       .tickSizeInner(-2.5).tickSizeOuter(0).tickPadding(2)
       .tickValues([...new Set([this._yMin, this._yMax].concat(this._yTicks))]);
-    const yAxis = (yAxisGroup.append("g") as d3.Selection<d3.AxisContainerElement, {}, null, undefined>)
+    const yAxis = (yAxisGroup.append("g") as AxisSelect)
       .attr("transform", "translate(-5, 0)")
       .call(yAxisGen);
     const yAxisLabel = yAxisGroup.append("g")
@@ -368,7 +363,7 @@ export class LinePlot {
     this._lines.forEach(line => line.plot(svg, x, y));
 
     // space apart y ticks
-    const yTicks = yAxis.selectAll("text").nodes() as HTMLElement[];
+    const yTicks = yAxis.selectAll("text").nodes() as SVGSVGElement[];
     const yTickSpaces = yTicks.map(tick => {
       const box = getBBox(tick);
       return [box.y - this._yTickPadding, box.height + 2 * this._yTickPadding] as [number, number];
@@ -379,7 +374,7 @@ export class LinePlot {
     });
 
     // space apart x ticks
-    const xTicks = xAxis.selectAll("text").nodes() as HTMLElement[];
+    const xTicks = xAxis.selectAll("text").nodes() as SVGSVGElement[];
     const xTickSpaces = xTicks.map(tick => {
       const box = getBBox(tick);
       return [box.x - this._xTickPadding, box.width + 2 * this._xTickPadding] as [number, number];

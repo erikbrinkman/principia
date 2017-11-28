@@ -1,6 +1,9 @@
 import * as d3 from "d3";
 import * as backend from "./backend";
 
+// FIXME Remove get from properties that are only set by people
+// FIXME Remove option groups and instead just have functions with default arguments
+// TODO Remove _ from private properties
 // TODO Move poly stuff into separate library
 // TODO Split this into the necessary backend and each chart type
 
@@ -9,6 +12,27 @@ type APoint = [number, number, number];
 type PlotSelect = d3.Selection<SVGSVGElement, any, any, any>;
 type AxisSelect = d3.Selection<d3.AxisContainerElement, {}, null, undefined>;
 type Scale = d3.ScaleContinuousNumeric<number, number>;
+
+function getBBox(svgElement: SVGSVGElement, element: SVGSVGElement): {x: number, y: number, width: number, height: number} {
+  const ctm = svgElement.getScreenCTM().inverse();
+  const rect = element.getBoundingClientRect();
+  const points = new Array(4).fill(undefined).map(_ => svgElement.createSVGPoint());
+  points[0].x = points[1].x = rect.left;
+  points[2].x = points[3].x = rect.right;
+  points[0].y = points[2].y = rect.top;
+  points[1].y = points[3].y = rect.bottom;
+  const transformed = points.map(p => p.matrixTransform(ctm));
+  const minx = Math.min(...transformed.map(p => p.x));
+  const maxx = Math.max(...transformed.map(p => p.x));
+  const miny = Math.min(...transformed.map(p => p.y));
+  const maxy = Math.max(...transformed.map(p => p.y));
+  return {
+    x: minx,
+    y: miny,
+    width: maxx - minx,
+    height: maxy - miny,
+  };
+}
 
 abstract class LinePlotElement {
   protected _class: string;
@@ -19,7 +43,7 @@ abstract class LinePlotElement {
   constructor() {
     this._class = "";
     this._label = "";
-    this._curve = d3.curveLinear;
+    this._curve = d3.curveCatmullRom;
     this._point = undefined;
   }
 
@@ -169,9 +193,9 @@ export class LinePlot {
   private _xTickPadding: number;
   private _labelBuffer: number;
 
-  constructor(width?: number, height?: number) {
-    this._width = width || 162;
-    this._height = height || 100;
+  constructor(width: number = 162, height: number = 100) {
+    this._width = width;
+    this._height = height;
     this._lines = [];
     // Bounds
     this._xMin = Infinity;
@@ -289,8 +313,7 @@ export class LinePlot {
       return [this.xmin(), this.xmax()];
     } else {
       const [min, max] = bounds;
-      this.xmin(min).xmax(max);
-      return this;
+      return this.xmin(min).xmax(max);
     }
   }
 
@@ -325,8 +348,7 @@ export class LinePlot {
       return [this.ymin(), this.ymax()];
     } else {
       const [min, max] = bounds;
-      this.ymin(min).ymax(max);
-      return this;
+      return this.ymin(min).ymax(max);
     }
   }
 
@@ -364,29 +386,7 @@ export class LinePlot {
   }
 
   plot(svgElement: SVGSVGElement): void {
-    /** Returns bbox without transformations */
-    function getBBox(element: any): {x: number, y: number, width: number, height: number} {
-      const ctm = svgElement.getScreenCTM().inverse();
-      const rect = element.getBoundingClientRect();
-      const points = new Array(4).fill(undefined).map(_ => svgElement.createSVGPoint());
-      points[0].x = points[1].x = rect.left;
-      points[2].x = points[3].x = rect.right;
-      points[0].y = points[2].y = rect.top;
-      points[1].y = points[3].y = rect.bottom;
-      const transformed = points.map(p => p.matrixTransform(ctm));
-      const minx = Math.min(...transformed.map(p => p.x));
-      const maxx = Math.max(...transformed.map(p => p.x));
-      const miny = Math.min(...transformed.map(p => p.y));
-      const maxy = Math.max(...transformed.map(p => p.y));
-      return {
-        x: minx,
-        y: miny,
-        width: maxx - minx,
-        height: maxy - miny,
-      };
-    }
-
-    const svg: d3.Selection<SVGSVGElement, {}, null, undefined> = d3.select(svgElement).append("g");
+    const svg: PlotSelect = d3.select(svgElement).append("g");
     const x = this._xScale.range([0, this._width]).domain([this._xMin, this._xMax]);
     const y = this._yScale.range([this._height, 0]).domain([this._yMin, this._yMax]);
 
@@ -431,7 +431,7 @@ export class LinePlot {
     // space apart y ticks
     const yTicks = yAxis.selectAll("text").nodes() as SVGSVGElement[];
     const yTickSpaces = yTicks.map(tick => {
-      const box = getBBox(tick);
+      const box = getBBox(svgElement, tick);
       return [box.y - this._yTickPadding, box.height + 2 * this._yTickPadding] as [number, number];
     });
     const newYs = backend.space1(yTickSpaces);
@@ -442,7 +442,7 @@ export class LinePlot {
     // space apart x ticks
     const xTicks = xAxis.selectAll("text").nodes() as SVGSVGElement[];
     const xTickSpaces = xTicks.map(tick => {
-      const box = getBBox(tick);
+      const box = getBBox(svgElement, tick);
       return [box.x - this._xTickPadding, box.width + 2 * this._xTickPadding] as [number, number];
     });
     const newXs = backend.space1(xTickSpaces);
@@ -451,7 +451,7 @@ export class LinePlot {
     });
 
     // align x axis label
-    const xBoxes = xTicks.map(tick => getBBox(tick)).sort((a, b) => a.x - b.x);
+    const xBoxes = xTicks.map(tick => getBBox(svgElement, tick)).sort((a, b) => a.x - b.x);
     const xLabelBox = (xAxisLabel.node() as SVGSVGElement).getBBox();
     const [xSmall, xLarge] = xBoxes.slice(0, -1)
       .map((bi, i) => [bi.x + bi.width, xBoxes[i + 1].x])
@@ -469,7 +469,7 @@ export class LinePlot {
     }
 
     // align y axis label
-    const topYBBox = getBBox(yAxis.selectAll("text").nodes()[1]);
+    const topYBBox = getBBox(svgElement, yAxis.selectAll("text").nodes()[1] as SVGSVGElement);
     yAxisLabel.attr("x", topYBBox.x).attr("y", topYBBox.y);
 
     // align line labels
@@ -483,6 +483,364 @@ export class LinePlot {
       labels.forEach((label, i) => {
         label.attr("x", this._width + this._labelBuffer).attr("y", pos[i] + input[i][1]);
       });
+    }
+  }
+}
+
+abstract class BarPlotElement {
+  protected _class: string;
+
+  constructor() {
+    this._class = "";
+  }
+
+  classed(): string;
+  classed(clas: string): this;
+  classed(clas?: string): string | this {
+    if (clas === undefined) {
+      return this._class;
+    } else {
+      this._class = clas;
+      return this;
+    }
+  }
+
+  abstract plot(elem: PlotSelect, x: Scale, y: number, barWidth: number, labelPading: number, showNums: boolean, numPadding: number): void;
+}
+
+class Bar extends BarPlotElement {
+  private _label: string;
+  private _value: number;
+
+  constructor(label: string, value: number) {
+    super();
+    this._label = label;
+    this._value = value;
+  }
+
+  plot(elem: PlotSelect, x: Scale, y: number, barWidth: number, labelPadding: number, showNums: boolean, numPadding: number): void {
+    elem.classed("bar", true);
+    elem.append("g").classed("val", true)
+      .append("rect").classed(this._class, true)
+      .attr("x", x.range()[0])
+      .attr("y", y * (1 - barWidth) / 2)
+      .attr("width", x(this._value))
+      .attr("height", y * (1 + barWidth) / 2);
+    elem.append("g").classed("label", true)
+      .append("text").classed(this._class, true)
+    .attr("x", - labelPadding)
+    .attr("y", y / 2)
+      .style("text-anchor", "end")
+      .style("alignment-baseline", "central")
+      .text(this._label);
+    if (showNums) {
+      elem.append("g").classed("num", true)
+        .append("text").classed(this._class, true)
+        .attr("x", x.range()[x.range().length - 1] + numPadding)
+        .attr("y", y / 2)
+        .style("alignment-baseline", "central")
+        .text(this._value);
+    }
+  }
+}
+
+class Section extends BarPlotElement {
+  private _label: string;
+
+  constructor(label: string) {
+    super();
+    this._label = label;
+  }
+
+  plot(elem: PlotSelect, _x: Scale, y: number, _barWidth: number, labelPadding: number, _showNums: boolean, _numPadding: number): void {
+    elem.classed("section", true)
+      .append("g").classed("label", true)
+      .append("text").classed(this._class, true)
+      .attr("x", - labelPadding)
+      .attr("y", y)
+      .style("text-anchor", "end")
+      .text(this._label);
+  }
+}
+
+export enum Align {
+  Left,
+  Middle,
+  Right,
+}
+
+export class BarPlot {
+  // FIXME Add axis tick formatting
+  // FIXME Add right number formatting
+  private _width: number;
+  private _lineHeight: number;
+  private _bars: BarPlotElement[];
+  private _min: number;
+  private _minSet: boolean;
+  private _max: number;
+  private _maxSet: boolean;
+  private _scale: Scale;
+  private _barWidth: number;
+  private _labelPadding: number;
+  private _labelAlign: Align;
+  private _sectAlign: Align;
+  // Numbers
+  private _showNums: boolean;
+  private _numPadding: number;
+  private _numAlign: Align;
+  // Axis
+  private _showAxis: boolean;
+  private _labelBelow: boolean;
+  private _label: string;
+  private _ticks: number[];
+  private _tickPadding: number;
+
+  constructor(width: number = 162, lineHeight: number = 12) {
+    this._width = width;
+    this._lineHeight = lineHeight;
+    this._bars = [];
+    // Bounds
+    this._min = Infinity;
+    this._minSet = false;
+    this._max = -Infinity;
+    this._maxSet = false;
+    this._scale = d3.scaleLinear();
+    this._barWidth = 0.8;
+    this._labelPadding = lineHeight / 5;
+    this._labelAlign = Align.Right;
+    this._sectAlign = Align.Left;
+    // Numbers
+    this._showNums = true;
+    this._numPadding = lineHeight / 5;
+    this._numAlign = Align.Right;
+    // Axis
+    this._showAxis = false;
+    this._labelBelow = false;
+    this._label = "";
+    this._ticks = [];
+    this._tickPadding = lineHeight / 5;
+  }
+
+  bar(label: string, value: number): Bar {
+    this._minSet || (this._min = Math.min(this._min, value));
+    this._maxSet || (this._max = Math.max(this._max, value));
+    const bar = new Bar(label, value);
+    this._bars.push(bar);
+    return bar;
+  }
+
+  section(label: string): Section {
+    const section = new Section(label);
+    this._bars.push(section);
+    return section;
+  }
+
+  width(width: number): this {
+    this._width = width;
+    return this;
+  }
+
+  lineHeight(lineHeight: number): this {
+    this._lineHeight = lineHeight;
+    return this;
+  }
+
+  barWidth(width: number): this {
+    this._barWidth = width;
+    return this;
+  }
+
+  labelPadding(padding: number): this {
+    this._labelPadding = padding;
+    return this;
+  }
+
+  labelAlign(align: Align): this {
+    this._labelAlign = align;
+    return this;
+  }
+
+  sectionAlign(align: Align): this {
+    this._sectAlign = align;
+    return this;
+  }
+
+  min(): number;
+  min(min: number): this;
+  min(min?: number): number | this {
+    if (min === undefined) {
+      return this._min;
+    } else {
+      this._min = min;
+      this._minSet = true;
+      return this;
+    }
+  }
+
+  max(): number;
+  max(max: number): this;
+  max(max?: number): number | this {
+    if (max === undefined) {
+      return this._max;
+    } else {
+      this._max = max;
+      this._maxSet = true;
+      return this;
+    }
+  }
+
+  bounds(): [number, number];
+  bounds(bounds: [number, number]): this;
+  bounds(bounds?: [number, number]): [number, number] | this {
+    if (bounds === undefined) {
+      return [this.min(), this.max()];
+    } else {
+      const [min, max] = bounds;
+      return this.min(min).max(max);
+    }
+  }
+
+  nums({numPadding = this._numPadding, numAlign = this._numAlign}): this {
+    this._showNums = true;
+    this._showAxis = false;
+    this._numPadding = numPadding;
+    this._numAlign = numAlign;
+    return this;
+  }
+
+  axis({label = this._label, ticks = this._ticks, labelBelow = this._labelBelow, tickPadding = this._tickPadding}): this {
+    this._showNums = false;
+    this._showAxis = true;
+    this._label = label;
+    this._ticks = ticks;
+    this._labelBelow = labelBelow;
+    this._tickPadding = tickPadding;
+    return this;
+  }
+
+  private align(svg: SVGSVGElement, select: PlotSelect, align: Align): void {
+    const info = select.nodes().map(n => {
+      const bbox = getBBox(svg, n);
+      return [bbox.x, bbox.width];
+    });
+    switch (align) {
+      case Align.Left: {
+        const min = Math.min(...info.map(([x, ]) => x));
+        select.data(info).attr("transform", ([x, ]) => `translate(${min - x}, 0)`);
+        break;
+      }
+      case Align.Middle: {
+        const min = Math.min(...info.map(([x, ]) => x));
+        const max = Math.max(...info.map(([x, width]) => x + width));
+        const center = (min + max) / 2;
+        select.data(info).attr("transform", ([x, width]) => `translate(${center - x - width / 2}, 0)`);
+        break;
+      }
+      case Align.Right: {
+        const max = Math.max(...info.map(([x, width]) => x + width));
+        select.data(info).attr("transform", ([x, width]) => `translate(${max - x - width}, 0)`);
+        break;
+      }
+      default:
+        throw Error(`unknown alignment: "${align}"`);
+    }
+  }
+
+  plot(svgElement: SVGSVGElement): void {
+    const svg: PlotSelect = d3.select(svgElement).append("g");
+    svg.append("style").text(`svg { font-size: ${this._lineHeight}; }`);
+    const x = this._scale.range([0, this._width]).domain([this._min, this._max]);
+
+    let h = 0;
+    this._bars.forEach(bar => {
+      const group = (svg.append("g") as PlotSelect).attr("transform", `translate(0, ${h})`);
+      bar.plot(group, x, this._lineHeight, this._barWidth, this._labelPadding, this._showNums, this._numPadding);
+      h += this._lineHeight;
+    });
+
+    // align
+    this.align(svgElement, svg.selectAll(".bar .label"), this._labelAlign);
+    if (this._showNums) {
+      this.align(svgElement, svg.selectAll(".bar .num"), this._numAlign);
+    }
+    switch (this._sectAlign) {
+      case Align.Left: {
+        const min = Math.min(...svg.selectAll(".bar .label").nodes().map(n => getBBox(svgElement, n as SVGSVGElement).x));
+        const select = svg.selectAll(".section .label");
+        const info = select.nodes().map(n => getBBox(svgElement, n as SVGSVGElement).x);
+        select.data(info).attr("transform", x => `translate(${min - x}, 0)`);
+        break;
+      }
+      case Align.Middle: {
+        const boxes = svg.selectAll(".bar").nodes().map(n => {
+          const bbox = getBBox(svgElement, n as SVGSVGElement);
+          return [bbox.x, bbox.width];
+        });
+        const min = Math.min(...boxes.map(([x, ]) => x));
+        const max = Math.max(...boxes.map(([x, w]) => x + w));
+        const center = (min + max) / 2;
+        const select = svg.selectAll(".section .label");
+        const info = select.nodes().map(n => {
+          const bbox = getBBox(svgElement, n as SVGSVGElement);
+          return bbox.x + bbox.width / 2;
+        });
+        select.data(info).attr("transform", c => `translate(${center - c}, 0)`);
+        break;
+      }
+      case Align.Right: {
+        // Do nothing, automatically right aligned
+        break;
+      }
+      default:
+        throw Error(`unknown alignment: "${this._sectAlign}"`);
+    }
+
+    // axes
+    if (this._showAxis) {
+      const axisGroup = svg.append("g").classed("axis", true);
+      const axisGen = d3.axisBottom(x)
+        .tickSizeInner(-2).tickSizeOuter(0).tickPadding(5)
+        .tickValues([...new Set([this._min, this._max].concat(this._ticks))]);
+      const axis = (axisGroup.append("g") as AxisSelect)
+        .classed("ticks", true)
+        .attr("transform", `translate(0, ${h + 5})`)
+        .call(axisGen);
+      const axisLabel = axisGroup.append("g")
+        .classed("label", true)
+        .append("text")
+        .style("text-anchor", "middle")
+        .text(this._label);
+
+      // space apart x ticks
+      const ticks = axis.selectAll("text").nodes() as SVGSVGElement[];
+      const tickSpaces = ticks.map(tick => {
+        const box = getBBox(svgElement, tick);
+        return [box.x - this._tickPadding, box.width + 2 * this._tickPadding] as [number, number];
+      });
+      const newXs = backend.space1(tickSpaces);
+      // TODO Do this with a d3 selection
+      ticks.forEach((tick, i) => {
+        // FIXME Remove all setAttribute in favor of d3 Selection
+        tick.setAttribute("x", (parseFloat(tick.getAttribute("x") || "0") + newXs[i] - tickSpaces[i][0]).toString());
+      });
+
+      // align x axis label
+      const boxes = ticks.map(tick => getBBox(svgElement, tick)).sort((a, b) => a.x - b.x);
+      const labelBox = (axisLabel.node() as SVGSVGElement).getBBox();
+      const [small, large] = boxes.slice(0, -1)
+        .map((bi, i) => [bi.x + bi.width, boxes[i + 1].x])
+        .reduce((l, e) => e[1] - e[0] > l[1] - l[0] ? e : l, [0, 0]);
+      if (this._labelBelow || large - small < labelBox.width) {
+        const y = Math.max(...boxes.map(d => d.y + d.height));
+        axisLabel
+          .attr("x", this._width / 2)
+          .attr("y", y + labelBox.height);
+      } else {
+        const y = Math.min(...boxes.map(d => d.y));
+        axisLabel
+          .attr("x", (large + small) / 2)
+          .attr("y", y + labelBox.height);
+      }
     }
   }
 }

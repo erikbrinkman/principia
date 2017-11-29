@@ -3,6 +3,7 @@ const d3 = require('d3');
 
 const plot = new princ.BarPlot()
   .min(0)
+  .numberFormat(d3.format('.2g'))
   .axis({label: 'Axis', ticks: [0.5]});
 plot.section('A');
 plot.bar('Label 1', 0.5);

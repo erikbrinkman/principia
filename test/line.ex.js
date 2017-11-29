@@ -2,11 +2,9 @@ const princ = require('../lib/index');
 const d3 = require('d3');
 
 const plot = new princ.LinePlot()
-  .xlabel('X')
-  .ylabel('Y')
-  .xticks([1])
-  .yticks([2])
-  .labels({side: true, buffer: 2});
+  .xaxis({label: 'X', ticks: [1]})
+  .yaxis({label: 'Y', ticks: [2], format: d3.format('.2r')})
+  .labels({buffer: 2});
 plot.area([[0, 0, 0],
            [1, 1, 3],
            [2, 5, 6],

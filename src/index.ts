@@ -1,11 +1,10 @@
 import * as d3 from "d3";
 import * as backend from "./backend";
 
-// FIXME Remove get from properties that are only set by people
-// FIXME Remove option groups and instead just have functions with default arguments
 // TODO Remove _ from private properties
 // TODO Move poly stuff into separate library
 // TODO Split this into the necessary backend and each chart type
+// TODO Make data more generic and keep mapping functions to pass through to d3
 
 type Point = [number, number];
 type APoint = [number, number, number];
@@ -170,7 +169,6 @@ class Area extends LinePlotElement {
 }
 
 export class LinePlot {
-  // FIXME Add axis tick formatting
   private _width: number;
   private _height: number;
   private _lines: LinePlotElement[];
@@ -188,6 +186,8 @@ export class LinePlot {
   private _yLabel: string;
   private _xTicks: number[];
   private _yTicks: number[];
+  private _xTickFormat: (domain: number, index: number) => string;
+  private _yTickFormat: (domain: number, index: number) => string;
   private _xLabelBelow: boolean;
   private _yTickPadding: number;
   private _xTickPadding: number;
@@ -212,6 +212,8 @@ export class LinePlot {
     this._yLabel = "";
     this._xTicks = [];
     this._yTicks = [];
+    this._xTickFormat = d3.format("");
+    this._yTickFormat = d3.format("");
     this._xLabelBelow = false;
     this._yTickPadding = 0;
     this._xTickPadding = 0;
@@ -221,6 +223,7 @@ export class LinePlot {
   line(data: Point[], options: {x?: (d: Point, i: number) => number, y?: (d: Point, i: number) => number}): Line;
   line<D>(data: D[], options: {x: (d: D, i: number) => number, y: (d: D, i: number) => number}): Line;
   line(data: any[], options: {x?: (d: any, i: number) => number, y?: (d: any, i: number) => number} = {}): Line {
+    // FIXME Move this into signature
     const {
       x = (d: any, _: number) => d[0],
       y = (d: any, _: number) => d[1],
@@ -241,6 +244,7 @@ export class LinePlot {
   area(data: APoint[], options: {x?: (d: APoint, i: number) => number, y0?: (d: APoint, i: number) => number, y1?: (d: APoint, i: number) => number}): Area;
   area<D>(data: D[], options: {x: (d: D, i: number) => number, y0: (d: D, i: number) => number, y1: (d: D, i: number) => number}): Area;
   area(data: any[], options: {x?: (d: any, i: number) => number, y0?: (d: any, i: number) => number, y1?: (d: any, i: number) => number} = {}): Area {
+    // FIXME Move this into signature
     const {
       x = (d: any, _: number) => d[0],
       y0 = (d: any, _: number) => d[1],
@@ -260,26 +264,14 @@ export class LinePlot {
     return area;
   }
 
-  width(): number;
-  width(width: number): this;
-  width(width?: number): number | this {
-    if (width === undefined) {
-      return this._width;
-    } else {
-      this._width = width;
-      return this;
-    }
+  width(width: number): this {
+    this._width = width;
+    return this;
   }
 
-  height(): number;
-  height(height: number): this;
-  height(height?: number): number | this {
-    if (height === undefined) {
-      return this._height;
-    } else {
-      this._height = height;
-      return this;
-    }
+  height(height: number): this {
+    this._height = height;
+    return this;
   }
 
   xmin(): number;
@@ -352,35 +344,24 @@ export class LinePlot {
     }
   }
 
-  xlabel(label: string, options: {below?: boolean} = {}): this {
-    const { below = this._xLabelBelow } = options;
+  xaxis({label = this._xLabel, labelBelow = this._xLabelBelow, ticks = this._xTicks, tickPadding = this._xTickPadding, format = this._xTickFormat}): this {
     this._xLabel = label;
-    this._xLabelBelow = below;
+    this._xLabelBelow = labelBelow;
+    this._xTicks = ticks;
+    this._xTickPadding = tickPadding;
+    this._xTickFormat = format;
     return  this;
   }
 
-  ylabel(label: string): this {
+  yaxis({label = this._yLabel, ticks = this._yTicks, tickPadding = this._yTickPadding, format = this._yTickFormat}): this {
     this._yLabel = label;
-    return this;
-  }
-
-  xticks(ticks: number[], options: {padding?: number} = {}): this {
-    const { padding = this._xTickPadding } = options;
-    this._xTicks = ticks;
-    this._xTickPadding = padding;
-    return this;
-  }
-
-  yticks(ticks: number[], options: {padding?: number} = {}): this {
-    const { padding = this._yTickPadding } = options;
     this._yTicks = ticks;
-    this._yTickPadding = padding;
-    return this;
+    this._yTickPadding = tickPadding;
+    this._yTickFormat = format;
+    return  this;
   }
 
-  labels(options: {buffer?: number} = {}): this {
-    // TODO This should be possible in one line, but seems like a bug
-    const { buffer = this._labelBuffer } = options;
+  labels({buffer = this._labelBuffer}): this {
     this._labelBuffer = buffer;
     return this;
   }
@@ -392,7 +373,8 @@ export class LinePlot {
 
     // axes
     const axisGroup = svg.append("g").classed("axis", true);
-    const xAxisGen = d3.axisBottom(x)
+    const xAxisGen = (d3.axisBottom(x) as d3.Axis<number>)
+      .tickFormat(this._xTickFormat)
       .tickSizeInner(-2).tickSizeOuter(0).tickPadding(5)
       .tickValues([...new Set([this._xMin, this._xMax].concat(this._xTicks))]);
     const xAxisGroup = axisGroup.append("g").classed("x", true);
@@ -406,8 +388,9 @@ export class LinePlot {
       .style("text-anchor", "middle")
       .text(this._xLabel);
     const yAxisGroup = axisGroup.append("g").classed("y", true);
-    const yAxisGen = d3.axisLeft(y)
+    const yAxisGen = (d3.axisLeft(y) as d3.Axis<number>)
       .tickSizeInner(-2.5).tickSizeOuter(0).tickPadding(2)
+      .tickFormat(this._yTickFormat)
       .tickValues([...new Set([this._yMin, this._yMax].concat(this._yTicks))]);
     const yAxis = (yAxisGroup.append("g") as AxisSelect)
       .attr("transform", "translate(-5, 0)")
@@ -505,7 +488,7 @@ abstract class BarPlotElement {
     }
   }
 
-  abstract plot(elem: PlotSelect, x: Scale, y: number, barWidth: number, labelPading: number, showNums: boolean, numPadding: number): void;
+  abstract plot(elem: PlotSelect, x: Scale, y: number, barWidth: number, labelPading: number, showNums: boolean, numPadding: number, numFormat: (domain: number, index: number) => string): void;
 }
 
 class Bar extends BarPlotElement {
@@ -518,7 +501,7 @@ class Bar extends BarPlotElement {
     this._value = value;
   }
 
-  plot(elem: PlotSelect, x: Scale, y: number, barWidth: number, labelPadding: number, showNums: boolean, numPadding: number): void {
+  plot(elem: PlotSelect, x: Scale, y: number, barWidth: number, labelPadding: number, showNums: boolean, numPadding: number, numFormat: (domain: number, index: number) => string): void {
     elem.classed("bar", true);
     elem.append("g").classed("val", true)
       .append("rect").classed(this._class, true)
@@ -539,7 +522,7 @@ class Bar extends BarPlotElement {
         .attr("x", x.range()[x.range().length - 1] + numPadding)
         .attr("y", y / 2)
         .style("alignment-baseline", "central")
-        .text(this._value);
+        .text((_, i) => numFormat(this._value, i));
     }
   }
 }
@@ -552,7 +535,7 @@ class Section extends BarPlotElement {
     this._label = label;
   }
 
-  plot(elem: PlotSelect, _x: Scale, y: number, _barWidth: number, labelPadding: number, _showNums: boolean, _numPadding: number): void {
+  plot(elem: PlotSelect, _x: Scale, y: number, _barWidth: number, labelPadding: number, _showNums: boolean, _numPadding: number, _numFormat: (domain: number, index: number) => string): void {
     elem.classed("section", true)
       .append("g").classed("label", true)
       .append("text").classed(this._class, true)
@@ -570,8 +553,6 @@ export enum Align {
 }
 
 export class BarPlot {
-  // FIXME Add axis tick formatting
-  // FIXME Add right number formatting
   private _width: number;
   private _lineHeight: number;
   private _bars: BarPlotElement[];
@@ -584,6 +565,7 @@ export class BarPlot {
   private _labelPadding: number;
   private _labelAlign: Align;
   private _sectAlign: Align;
+  private _numFormat: (domain: number, index: number) => string;
   // Numbers
   private _showNums: boolean;
   private _numPadding: number;
@@ -609,6 +591,7 @@ export class BarPlot {
     this._labelPadding = lineHeight / 5;
     this._labelAlign = Align.Right;
     this._sectAlign = Align.Left;
+    this._numFormat = d3.format("");
     // Numbers
     this._showNums = true;
     this._numPadding = lineHeight / 5;
@@ -662,6 +645,11 @@ export class BarPlot {
 
   sectionAlign(align: Align): this {
     this._sectAlign = align;
+    return this;
+  }
+
+  numberFormat(format: (domain: number, index: number) => string): this {
+    this._numFormat = format;
     return this;
   }
 
@@ -754,7 +742,7 @@ export class BarPlot {
     let h = 0;
     this._bars.forEach(bar => {
       const group = (svg.append("g") as PlotSelect).attr("transform", `translate(0, ${h})`);
-      bar.plot(group, x, this._lineHeight, this._barWidth, this._labelPadding, this._showNums, this._numPadding);
+      bar.plot(group, x, this._lineHeight, this._barWidth, this._labelPadding, this._showNums, this._numPadding, this._numFormat);
       h += this._lineHeight;
     });
 
@@ -798,8 +786,9 @@ export class BarPlot {
     // axes
     if (this._showAxis) {
       const axisGroup = svg.append("g").classed("axis", true);
-      const axisGen = d3.axisBottom(x)
+      const axisGen = (d3.axisBottom(x) as d3.Axis<number>)
         .tickSizeInner(-2).tickSizeOuter(0).tickPadding(5)
+        .tickFormat(this._numFormat)
         .tickValues([...new Set([this._min, this._max].concat(this._ticks))]);
       const axis = (axisGroup.append("g") as AxisSelect)
         .classed("ticks", true)

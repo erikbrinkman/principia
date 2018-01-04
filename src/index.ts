@@ -1,6 +1,8 @@
 import * as d3 from "d3";
 import * as backend from "./backend";
 
+// FIXME Try to remove all padding arguments and default to CSS transformations.
+// FIXME Does it make sense to allow x, y, y1, y2 in line and area, or should be
 // TODO Remove _ from private properties
 // TODO Move poly stuff into separate library
 // TODO Split this into the necessary backend and each chart type

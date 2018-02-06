@@ -147,10 +147,10 @@ class Area extends LinePlotElement {
 
   plot(svg: PlotSelect, x: Scale, y: Scale): void {
     // TODO Truncate data if it goes outside of bounds
-    const path = d3.area()
-      .x(d => x(d[0]))
-      .y0(d => y(d[1]))
-      .y1(d => y(d[2]))
+    const path = d3.area<APoint>()
+      .x((d: APoint) => x(d[0]))
+      .y0((d: APoint) => y(d[1]))
+      .y1((d: APoint) => y(d[2]))
       .curve(this._curve)(this._data);
     if (path !== null) {
       svg.append("g").classed("area", true)

@@ -1,0 +1,15 @@
+.value .color {
+  fill: red;
+}
+
+.name {
+  transform: translateX(-40px);
+}
+
+.num {
+  transform: translateX(192px);
+}
+
+.axis {
+  display: none;
+}

@@ -1,0 +1,23 @@
+{
+  "type": "comparison",
+  "format": ".1f",
+  "axis": {
+    "label": "X Axis",
+    "ticks": [12.5, 34]
+  },
+  "data": [
+    {
+      "name": "Label",
+      "value": 34
+    },
+    {
+      "name": "Value",
+      "class": "color",
+      "value": 12.5
+    },
+    {
+      "name": "Test",
+      "value": 16.3
+    }
+  ]
+}

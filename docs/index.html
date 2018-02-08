@@ -67,8 +67,21 @@
 				<h1 id="principia">Principia</h1>
 				<p><a href="https://www.npmjs.com/package/principia"><img src="https://img.shields.io/npm/v/principia.svg?style=flat-square" alt="npm"></a>
 				<a href="https://travis-ci.org/erikbrinkman/principia"><img src="https://img.shields.io/travis/erikbrinkman/principia.svg?style=flat-square" alt="Travis"></a></p>
-				<p>A library for making plots loosely based off of Principiae.</p>
-				<p>This library is meant to work with d3 and at some point should provide methods for conveniently making plots in the way that I like to, but the most appropriate way to structure that is uncertain, so for now it just includes routines to do what I find necessary.</p>
+				<p>A library for making plots based off of Principiae.
+				In particular, the library strives to make it easy to create plots like <a href="https://youtu.be/6lm4wJ1qm0w">this</a>.</p>
+				<h2 id="cookbook">Cookbook</h2>
+				<p>By default this operates on generic svgs, but there are simple bash operations that can help modify the output.</p>
+				<h3 id="add-styles">Add Styles</h3>
+				<p>If you want to add custom styles (<code>&lt;style-file&gt;</code>) to an already created svg (<code>&lt;svg-file&gt;</code>), the following will do that, creating <code>&lt;new-svg&gt;</code> in the process:</p>
+				<pre><code>{ head -n-<span class="hljs-number">14</span> <span class="hljs-symbol">&lt;svg-file&gt;</span> &amp;&amp; <span class="hljs-keyword">cat</span> <span class="hljs-symbol">&lt;svg-file&gt;</span> &amp;&amp; <span class="hljs-keyword">echo</span> <span class="hljs-string">'&lt;/style&gt;&lt;/svg&gt;'</span> } &gt; <span class="hljs-symbol">&lt;new-svg&gt;</span>
+</code></pre><p>This works because the file always ends in the style element and then the closing svg.
+				The call to <code>head</code> trims those from the end, opening up the final style element, adding the additional style info, and then closes them back up.</p>
+				<h3 id="render-svg-with-chrome">Render SVG with chrome</h3>
+				<p>To render an svg file (<code>&lt;svg-file&gt;</code>) as a pdf (<code>&lt;pdf-file&gt;</code>) using Google Chrome, specifically the kind output by principia, the following set of lines will do that:</p>
+				<pre><code>{ echo -n '<span class="hljs-meta">&lt;!doctype html&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">html</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">style</span>&gt;</span><span class="css">@<span class="hljs-keyword">page</span> { <span class="hljs-attribute">margin</span>: <span class="hljs-number">0</span>; }</span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span>' &amp;&amp; cat <span class="hljs-tag">&lt;<span class="hljs-name">svg-file</span>&gt;</span> &amp;&amp; echo '<span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span>' } &gt; tmp.html
+chromium-browser --headless --disable-gpu --virtual-time-budget=1000 --print-to-pdf=tmp.pdf tmp.html
+pdfcrop tmp.html <span class="hljs-tag">&lt;<span class="hljs-name">pdf-file</span>&gt;</span>
+</code></pre><p>This converts the svg to an html file that won&#39;t print headers, then uses headless chrome to render as a pdf, then used <code>pdfcrop</code> to trim the extra page whitespace.</p>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
@@ -78,28 +91,13 @@
 						<a href="globals.html"><em>Globals</em></a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="modules/_backend_.html">"backend"</a>
+						<a href="modules/_cmd_.html">"cmd"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="modules/_curves_.html">"curves"</a>
+						<a href="modules/_comparison_.html">"comparison"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="modules/_index_.html">"index"</a>
-					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="modules/_lines_.html">"lines"</a>
-					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="modules/_points_.html">"points"</a>
-					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="modules/_polys_.html">"polys"</a>
-					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="modules/_rects_.html">"rects"</a>
-					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="modules/_utils_.html">"utils"</a>
+						<a href="modules/_evolution_.html">"evolution"</a>
 					</li>
 				</ul>
 			</nav>

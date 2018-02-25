@@ -37,3 +37,12 @@ pdfcrop tmp.html <pdf-file>
 ```
 
 This converts the svg to an html file that won't print headers, then uses headless chrome to render as a pdf, then used `pdfcrop` to trim the extra page whitespace.
+
+
+ToDo
+----
+
+- The command line API for creating plots could be a lot better.
+  Currently it's just a hacky json interface.
+- The api behind class structure should be fixed and documented.
+- There are more plot styles to adapt.

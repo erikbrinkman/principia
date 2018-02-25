@@ -45,4 +45,7 @@ ToDo
 - The command line API for creating plots could be a lot better.
   Currently it's just a hacky json interface.
 - The api behind class structure should be fixed and documented.
-- There are more plot styles to adapt.
+- The classes principia uses should be prefixed, e.g. `princ--`.
+- There are more plot styles to adapt from Jean-Luc.
+- I think for ux purposes you should be able to style elements both off of their class, but also off of n-th child rules.
+- Extending from that, there should be built in theme classes that color nth children and style everything appropriately.

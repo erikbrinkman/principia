@@ -299,18 +299,20 @@ export class Evolution {
     }
   }
 
-  xaxis({label = this.xLabel, ticks = this.xTicks, format = this.xTickFormat}): this {
+  xaxis({label = this.xLabel, ticks = this.xTicks, format = this.xTickFormat, scale = this.xScale}): this {
     this.xLabel = label;
     this.xTicks = ticks;
     this.xTickFormat = format;
-    return  this;
+    this.xScale = scale;
+    return this;
   }
 
-  yaxis({label = this.yLabel, ticks = this.yTicks, format = this.yTickFormat}): this {
+  yaxis({label = this.yLabel, ticks = this.yTicks, format = this.yTickFormat, scale = this.yScale}): this {
     this.yLabel = label;
     this.yTicks = ticks;
     this.yTickFormat = format;
-    return  this;
+    this.yScale = scale;
+    return this;
   }
 
   plot(svgElement: SVGSVGElement): void {

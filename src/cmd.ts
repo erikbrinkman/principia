@@ -32,10 +32,10 @@ const symbols: {[i: string]: d3.SymbolType} = {
 };
 
 // Symbols
-const scales: {[i: string]: d3.ScaleContinuousNumeric<number, number>} = {
-  "linear": d3.scaleLinear(),
-  "log": d3.scaleLog(),
-  "sqrt": d3.scaleSqrt(),
+const scales: {[i: string]: () => d3.ScaleContinuousNumeric<number, number>} = {
+  "linear": d3.scaleLinear,
+  "log": d3.scaleLog,
+  "sqrt": d3.scaleSqrt,
 };
 
 // Dict of plotting evolution types
@@ -50,8 +50,8 @@ function evo(config: any, svg: SVGSVGElement) {
   config.yaxis = config.yaxis || {};
   config.xaxis.format = d3.format(config.xaxis.format || "");
   config.yaxis.format = d3.format(config.yaxis.format || "");
-  config.xaxis.scale = scales[config.xaxis.scale || "linear"]
-  config.yaxis.scale = scales[config.yaxis.scale || "linear"]
+  config.xaxis.scale = scales[config.xaxis.scale || "linear"]();
+  config.yaxis.scale = scales[config.yaxis.scale || "linear"]();
   const plot = evolution(config.width || 162, config.height || 100)
     .xaxis(config.xaxis).yaxis(config.yaxis);
   config.xaxis.min === undefined || plot.xmin(config.xaxis.min);

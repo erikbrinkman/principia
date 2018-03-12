@@ -1,0 +1,42 @@
+{
+  "type": "evolution",
+  "xaxis": {
+    "label": "Ex",
+    "ticks": [3.5],
+    "format": ".1f",
+    "scale": "linear"
+  },
+  "yaxis": {
+    "label": "Top",
+    "ticks": [4],
+    "max": 5
+  },
+  "data": [
+    {
+      "type": "span",
+      "class": "color",
+      "curve": "monotone",
+      "data": [
+        [1, 3, 3],
+        [2, 4, 4],
+        [3, 3, 4],
+        [4, 1, 3],
+        [5, 0, 3],
+        [6, 0, 1]
+      ]
+    },
+    {
+      "type": "line",
+      "label": "label",
+      "point": "circle",
+      "data": [
+        [1, 3],
+        [2, 4],
+        [3, 4],
+        [4, 2],
+        [5, 1],
+        [6, 0]
+      ]
+    }
+  ]
+}

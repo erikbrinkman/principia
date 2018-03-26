@@ -1,4 +1,7 @@
 dist: trusty
 node_js:
     - "node"
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y imagemagick chromium-browser libpng3 ghostscript
 language: node_js

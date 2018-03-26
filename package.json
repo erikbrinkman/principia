@@ -1,14 +1,12 @@
 {
   "name": "principia",
   "version": "0.0.10",
-  "description": "A library for making plots loosely based off of principae",
+  "description": "A library for making plots based off of principae",
   "bin": "bin/cmd.js",
   "scripts": {
     "test": "jest --forceExit",
-    "build": "tsc",
-    "watch": "tsc -w",
-    "lint": "tslint -c tslint.json -p tsconfig.json",
-    "docs": "typedoc --out docs src"
+    "lint": "eslint bin/cmd.js resources/post_script.js resources/pre_script.js test/*.js",
+    "todo": "grep -nrEI 'FIXME|TODO|XXX' bin test resources"
   },
   "repository": {
     "type": "git",
@@ -24,31 +22,26 @@
   },
   "homepage": "https://github.com/erikbrinkman/principia#readme",
   "dependencies": {
-    "d3": "^4.12.0",
-    "jsdom": "^11.6.2",
+    "chrome-launcher": "^0.10.2",
+    "chrome-remote-interface": "^0.25.5",
+    "clean-css": "^4.1.11",
+    "principia-plot": "0.0.8",
+    "tempy": "^0.2.1",
+    "uglify-es": "^3.3.9",
     "yargs": "^11.0.0"
   },
   "devDependencies": {
-    "@types/d3": "^4.12.0",
-    "@types/jsdom": "^11.0.4",
-    "@types/node": "^8.5.10",
-    "@types/yargs": "^10.0.1",
-    "jest": "^21.2.1",
-    "ts-jest": "^21.2.4",
-    "tslint": "^5.9.1",
-    "typedoc": "^0.10.0",
-    "typescript": "^2.7.1"
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.9.0",
+    "jest": "^22.4.3"
   },
   "jest": {
     "moduleFileExtensions": [
-      "ts",
       "js"
     ],
-    "transform": {
-      "^.+\\.(ts)$": "./node_modules/ts-jest/preprocessor.js"
-    },
     "testMatch": [
-      "**/test/**/*.test.(ts|js)"
+      "**/test/**/*.test.js"
     ],
     "testEnvironment": "node"
   }

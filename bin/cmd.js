@@ -89,7 +89,7 @@ const resources = path.join(root, 'resources');
       // eslint-disable-next-line no-underscore-dangle
       env.__PRINC_NAME__ = `${args.$0} plot`;
       cp.execFileSync(
-        path.join(root, 'node_modules', 'principia-plot', 'bin', 'cmd.js'),
+        path.join(root, 'node_modules', '.bin', 'principia-plot'),
         params,
         { stdio: 'inherit', env },
       );

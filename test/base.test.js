@@ -63,4 +63,8 @@ describe('piping', () => {
   it('adjusts comparisonz appropriately', () => {
     execPipeSync(`< ${comparisonz} ${cmd} plot | ${cmd} html --name 3 --num 3 | ${cmd} pdf > test/comparisonz.ex.adjust.pdf`);
   });
+
+  it('handles long svg renders', () => {
+    execPipeSync(`< test/long_render.json ${cmd} plot | ${cmd} append <(echo '.princ--point { display: none; }') | ${cmd} html --label 0 | ${cmd} pdf > test/long_render.pdf`);
+  });
 });

@@ -110,7 +110,9 @@ const resources = path.join(root, 'resources');
       const postScript = uglifyes.minify(fs.readFileSync(path.join(resources, 'post_script.js'), 'utf8')).code;
 
       const buff = new stream.Readable();
-      buff.push('<!doctype html><html><head><style>');
+      buff.push('<!doctype html><html><head><script>');
+      buff.push('window.__princ={};__princ.rendered=new Promise(res=>{__princ.res=res;});');
+      buff.push('</script><style>');
       buff.push(style);
       buff.push('</style></head><body>');
       buff.push(svg);
@@ -142,7 +144,7 @@ const resources = path.join(root, 'resources');
       }
 
       buff.push(postScript);
-      buff.push('});</script></body></html>');
+      buff.push(';__princ.res();});</script></body></html>');
       buff.push(null);
       buff.pipe(args.output === 'stdout' ? process.stdout : fs.createWriteStream(args.output));
       break;
@@ -184,7 +186,13 @@ const resources = path.join(root, 'resources');
       const protocol = await chromeRemote({ port: chrome.port });
       const { Page, Runtime } = protocol;
       await Promise.all([Page.enable(), Runtime.enable()]);
-      // FIXME Need an extra check to make sure page has finished rendering
+
+      // await page load
+      const { result: { objectId } } = await Runtime.evaluate({
+        expression: '__princ.rendered',
+      });
+      await Runtime.awaitPromise({ promiseObjectId: objectId });
+
       const { result: { value: { width, height } } } = await Runtime.evaluate({
         expression: 'rect = document.documentElement.getBoundingClientRect(); res = {width: rect.width, height: rect.height}',
         returnByValue: true,

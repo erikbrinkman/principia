@@ -85,14 +85,16 @@ const resources = path.join(root, 'resources');
         args.help ? ['--help'] : [],
         args.h ? ['-h'] : [],
       );
+      // XXX This is necessary because principia-plot may not be installed
+      // where we want it. I could not find a better solution.
+      const exec = [root, 'node_modules', '.bin', 'principia-plot'];
+      while (!fs.existsSync(path.join(...exec))) {
+        exec.splice(-3, 0, '..');
+      }
       const env = JSON.parse(JSON.stringify(process.env));
       // eslint-disable-next-line no-underscore-dangle
       env.__PRINC_NAME__ = `${args.$0} plot`;
-      cp.execFileSync(
-        path.join(root, 'node_modules', '.bin', 'principia-plot'),
-        params,
-        { stdio: 'inherit', env },
-      );
+      cp.execFileSync(path.join(...exec), params, { stdio: 'inherit', env });
       break;
     }
     case 'html': {

@@ -182,6 +182,7 @@ const resources = path.join(root, 'resources');
       const protocol = await chromeRemote({ port: chrome.port });
       const { Page, Runtime } = protocol;
       await Promise.all([Page.enable(), Runtime.enable()]);
+      // FIXME Need an extra check to make sure page has finished rendering
       const { result: { value: { width, height } } } = await Runtime.evaluate({
         expression: 'rect = document.documentElement.getBoundingClientRect(); res = {width: rect.width, height: rect.height}',
         returnByValue: true,

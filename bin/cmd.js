@@ -191,11 +191,16 @@ const resources = path.join(root, 'resources');
       const { result: { objectId } } = await Runtime.evaluate({
         expression: '__princ.rendered',
       });
-      const { result: { type, description } } = await Runtime.awaitPromise({
-        promiseObjectId: objectId,
-      });
-      if (type !== 'undefined' && description !== undefined) {
-        throw description;
+      try {
+        const { result: { type, description } } = await Runtime.awaitPromise({
+          promiseObjectId: objectId,
+        });
+        if (type !== 'undefined' && description !== undefined) {
+          throw description;
+        }
+      } catch (err) {
+        console.error('obj', objectId, 'err', err);
+        throw err;
       }
 
       const { result: { value: { width, height } } } = await Runtime.evaluate({

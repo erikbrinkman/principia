@@ -191,16 +191,23 @@ const resources = path.join(root, 'resources');
       const { result: { objectId } } = await Runtime.evaluate({
         expression: '__princ.rendered',
       });
-      try {
-        const { result: { type, description } } = await Runtime.awaitPromise({
-          promiseObjectId: objectId,
-        });
-        if (type !== 'undefined' && description !== undefined) {
-          throw description;
+      let description;
+      for (let i = 0; i < 10; i += 1) {
+        description = undefined;
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          ({ result: { description } } = await Runtime.awaitPromise({
+            promiseObjectId: objectId,
+          }));
+          break;
+        } catch (err) {
+          description = err;
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(resolve => setTimeout(resolve, 10));
         }
-      } catch (err) {
-        console.error('obj', objectId, 'err', err);
-        throw err;
+      }
+      if (description !== undefined) {
+        throw description;
       }
 
       const { result: { value: { width, height } } } = await Runtime.evaluate({

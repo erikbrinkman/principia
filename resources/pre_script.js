@@ -32,10 +32,13 @@ function bbox(elem) {
  * Elements is a list of initial positions and widths, and spacing is how much
  * room to leave between them.
  */
-function spaceApartCalc(elements, spacing) {
+function spaceApartCalc(elements, spacing, bounds = [undefined, undefined]) {
+  // Sort so that constraints are convex
   const centers = elements.map(([x, w]) => x + (w / 2));
   const ord = centers.map((_, i) => i).sort((a, b) => centers[a] - centers[b]);
   const sorted = ord.map(i => elements[i]);
+
+  // Construct base constraints and objective
   const Q = centers.map((_, i) => {
     const res = Array(centers.length).fill(0);
     res[i] = 1;
@@ -49,6 +52,23 @@ function spaceApartCalc(elements, spacing) {
     return res;
   });
   const b = sorted.slice(0, -1).map(([x, w], i) => sorted[i + 1][0] - spacing - x - w);
+
+  // Add constraints for bounds violations
+  const [lower, upper] = bounds;
+  if (lower !== undefined) {
+    const row = Array(centers.length).fill(0);
+    row[0] = -1;
+    A.push(row);
+    b.push(sorted[0][0] - lower);
+  }
+  if (upper !== undefined) {
+    const row = Array(centers.length).fill(0);
+    row[row.length - 1] = 1;
+    A.push(row);
+    b.push(upper - sorted[sorted.length - 1][0] - sorted[sorted.length - 1][1]);
+  }
+
+  // Solve and unsort
   const sol = solveQP(Q, c, A, b);
   const offsets = [];
   ord.forEach((i, j) => {
@@ -63,7 +83,7 @@ async function render(time = 0) {
 }
 
 /** Space elements apart along the y axis */
-async function spaceApartX(elements, spacing) {
+async function spaceApartX(elements, spacing, bounds) {
   const elems = Array.from(elements);
   elems.forEach(({ style }) => {
     style.transform = 'none'; // eslint-disable-line no-param-reassign
@@ -72,7 +92,7 @@ async function spaceApartX(elements, spacing) {
   const offsets = spaceApartCalc(elems.map((elem) => {
     const box = bbox(elem);
     return [box.x, box.width];
-  }), spacing);
+  }), spacing, bounds);
   elems.forEach(({ style }, i) => {
     style.transform = `translateX(${offsets[i]}px)`; // eslint-disable-line no-param-reassign
   });
@@ -80,7 +100,7 @@ async function spaceApartX(elements, spacing) {
 }
 
 /** Space elements apart along the y axis */
-async function spaceApartY(elements, spacing) {
+async function spaceApartY(elements, spacing, bounds) {
   const elems = Array.from(elements);
   elems.forEach(({ style }) => {
     style.transform = 'none'; // eslint-disable-line no-param-reassign
@@ -89,7 +109,7 @@ async function spaceApartY(elements, spacing) {
   const offsets = spaceApartCalc(elems.map((elem) => {
     const box = bbox(elem);
     return [box.y, box.height];
-  }), spacing);
+  }), spacing, bounds);
   elems.forEach(({ style }, i) => {
     style.transform = `translateY(${offsets[i]}px)`; // eslint-disable-line no-param-reassign
   });
@@ -130,7 +150,8 @@ async function alignXAxisLabel(spacing, shift) { // eslint-disable-line no-unuse
 
 /** Space apart y ticks */
 async function spaceApartYAxisTickLabels(spacing) { // eslint-disable-line no-unused-vars
-  await spaceApartY(document.querySelectorAll('.princ--yaxis .princ--tick-label'), spacing);
+  const { y } = bbox(document.querySelector('.princ--xaxis .princ--tick-line'));
+  await spaceApartY(document.querySelectorAll('.princ--yaxis .princ--tick-label'), spacing, [undefined, y]);
 }
 
 /** Space apart x ticks */
@@ -172,8 +193,13 @@ async function alignComparisonZNums(spacing) { // eslint-disable-line no-unused-
 
 /** Space apart evolution labels */
 async function spaceApartEvolutionLabels(spacing) { // eslint-disable-line no-unused-vars
+  const { y } = bbox(document.querySelector('.princ--xaxis .princ--tick-line'));
   await spaceApartY(Array.from(document.querySelectorAll('.princ--label')).filter((elem) => {
     const { width, height } = elem.getBBox();
     return width > 0 && height > 0;
-  }), spacing);
+  }), spacing, [undefined, y]);
+  await spaceApartY(Array.from(document.querySelectorAll('.princ--label')).filter((elem) => {
+    const { width, height } = elem.getBBox();
+    return width > 0 && height > 0;
+  }), spacing, [undefined, y]);
 }

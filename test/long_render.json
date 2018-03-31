@@ -8,7 +8,7 @@
     "format": ".1s"
   },
   "yaxis": {
-    "label": "Price - μ",
+    "label": "Price - f̄",
     "ticks": [
       0
     ],

@@ -172,5 +172,8 @@ async function alignComparisonZNums(spacing) { // eslint-disable-line no-unused-
 
 /** Space apart evolution labels */
 async function spaceApartEvolutionLabels(spacing) { // eslint-disable-line no-unused-vars
-  await spaceApartY(document.querySelectorAll('.princ--label'), spacing);
+  await spaceApartY(Array.from(document.querySelectorAll('.princ--label')).filter((elem) => {
+    const { width, height } = elem.getBBox();
+    return width > 0 && height > 0;
+  }), spacing);
 }

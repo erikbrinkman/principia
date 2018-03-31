@@ -510,7 +510,7 @@ const solveQP = (() => {
   function solveQP(Q, c, A, b) {
     let Dmat = Q.map(r => r.slice());
     let dvec = c.map(v => -v);
-    let Amat = A[0].map((_, i) => A.map(r => -r[i]));
+    let Amat = c.map((_, i) => A.map(r => -r[i]));
     let bvec = b.map(v => -v);
 
     Dmat.forEach(r => r.unshift(undefined));

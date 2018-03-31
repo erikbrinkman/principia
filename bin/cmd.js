@@ -111,12 +111,12 @@ const resources = path.join(root, 'resources');
 
       const buff = new stream.Readable();
       buff.push('<!doctype html><html><head><script>');
-      buff.push('window.__princ={};__princ.rendered=new Promise(res=>{__princ.res=res;});');
+      buff.push('window.__princ={};__princ.rendered=new Promise((res,rej)=>{__princ.res=res;__princ.rej=rej;});');
       buff.push('</script><style>');
       buff.push(style);
       buff.push('</style></head><body>');
       buff.push(svg);
-      buff.push('<script>"use strict";addEventListener("load", async () => {');
+      buff.push('<script>"use strict";addEventListener("load", async () => {try{');
       buff.push(quadprog);
       buff.push(preScript);
 
@@ -144,7 +144,7 @@ const resources = path.join(root, 'resources');
       }
 
       buff.push(postScript);
-      buff.push(';__princ.res();});</script></body></html>');
+      buff.push('}catch(err){__princ.rej(err);return;};__princ.res();});</script></body></html>');
       buff.push(null);
       buff.pipe(args.output === 'stdout' ? process.stdout : fs.createWriteStream(args.output));
       break;
@@ -191,7 +191,12 @@ const resources = path.join(root, 'resources');
       const { result: { objectId } } = await Runtime.evaluate({
         expression: '__princ.rendered',
       });
-      await Runtime.awaitPromise({ promiseObjectId: objectId });
+      const { result: { type, description } } = await Runtime.awaitPromise({
+        promiseObjectId: objectId,
+      });
+      if (type !== 'undefined' && description !== undefined) {
+        throw description;
+      }
 
       const { result: { value: { width, height } } } = await Runtime.evaluate({
         expression: 'rect = document.documentElement.getBoundingClientRect(); res = {width: rect.width, height: rect.height}',

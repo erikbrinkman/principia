@@ -110,6 +110,7 @@ const resources = path.join(root, 'resources');
       const postScript = uglifyes.minify(fs.readFileSync(path.join(resources, 'post_script.js'), 'utf8')).code;
 
       const buff = new stream.Readable();
+      buff._read = () => {}; // eslint-disable-line no-underscore-dangle
       buff.push('<!doctype html><html><head><script>');
       buff.push('window.__princ={};__princ.rendered=new Promise((res,rej)=>{__princ.res=res;__princ.rej=rej;});');
       buff.push('</script><style>');
@@ -157,6 +158,7 @@ const resources = path.join(root, 'resources');
         throw Error('a principia svg must start with "<svg" and end with "</style></svg>"');
       }
       const buff = new stream.Readable();
+      buff._read = () => {}; // eslint-disable-line no-underscore-dangle
       buff.push(svg.slice(0, -end.length));
       args.stylesheet.forEach((file) => {
         const minified = cleancss.minify(fs.readFileSync(file === '-' ? 0 : file, 'utf8'));
@@ -225,6 +227,7 @@ const resources = path.join(root, 'resources');
       await chrome.kill();
 
       const buff = new stream.Readable();
+      buff._read = () => {}; // eslint-disable-line no-underscore-dangle
       buff.push(Buffer.from(data, 'base64'));
       buff.push(null);
       buff.pipe(args.output === 'stdout' ? process.stdout : fs.createWriteStream(args.output));

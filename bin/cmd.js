@@ -23,7 +23,13 @@ const args = yargs
     default: 'stdout',
     describe: 'Output result to a file',
   })
-  .command('plot', 'Convert a json spec to an svg', ygs => ygs.help(false))
+  .command('plot', 'Convert a json spec to an svg', ygs => ygs
+    .option('style', {
+      alias: ['css', 'c', 's'],
+      array: true,
+      default: [],
+    })
+    .help(false))
   .command('append [stylesheet...]', 'Append css files to an svg', ygs => ygs
     .positional('stylesheet', {
       describe: 'Stylesheet to append to svg',
@@ -84,6 +90,7 @@ const resources = path.join(root, 'resources');
       const params = ['-i', args.input, '-o', args.output].concat(
         args.help ? ['--help'] : [],
         args.h ? ['-h'] : [],
+        ...args.style.map(sty => ['--css', sty]),
       );
       // XXX This is necessary because principia-plot may not be installed
       // where we want it. I could not find a better solution.

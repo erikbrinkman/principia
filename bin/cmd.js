@@ -189,48 +189,54 @@ const resources = path.join(root, 'resources');
       const { Page, Runtime } = protocol;
       await Promise.all([Page.enable(), Runtime.enable()]);
 
-      // await page load
-      const { result: { objectId } } = await Runtime.evaluate({
-        expression: '__princ.rendered',
-      });
-      let description;
-      for (let i = 0; i < 10; i += 1) {
-        description = undefined;
-        try {
-          // eslint-disable-next-line no-await-in-loop
-          ({ result: { description } } = await Runtime.awaitPromise({
-            promiseObjectId: objectId,
-          }));
-          break;
-        } catch (err) {
-          description = err;
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise(resolve => setTimeout(resolve, 10));
+      try {
+        // await page load
+        /* For some reason, the promise is sometimes invalid, here we retry
+         * with exponential backoff. This might not actually be doing
+         * anything. */
+        const { result: { objectId } } = await Runtime.evaluate({
+          expression: '__princ.rendered',
+        });
+        let description;
+        for (let timeout = 1; timeout < 1000; timeout *= 2) {
+          description = undefined;
+          try {
+            // eslint-disable-next-line no-await-in-loop
+            ({ result: { description } } = await Runtime.awaitPromise({
+              promiseObjectId: objectId,
+            }));
+            break;
+          } catch (err) {
+            description = err;
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(resolve => setTimeout(resolve, timeout));
+          }
         }
-      }
-      if (description !== undefined) {
-        throw description;
-      }
+        if (description !== undefined) {
+          throw description;
+        }
 
-      const { result: { value: { width, height } } } = await Runtime.evaluate({
-        expression: 'rect = document.documentElement.getBoundingClientRect(); res = {width: rect.width, height: rect.height}',
-        returnByValue: true,
-      });
-      const { data } = await Page.printToPDF({
-        displayHeaderFooter: false,
-        printBackground: true,
-        paperWidth: width / 96.0,
-        paperHeight: height / 96.0,
-        pageRanges: '1',
-      });
-      await protocol.close();
-      await chrome.kill();
+        const { result: { value: { width, height } } } = await Runtime.evaluate({
+          expression: 'rect = document.documentElement.getBoundingClientRect(); res = {width: rect.width, height: rect.height}',
+          returnByValue: true,
+        });
+        const { data } = await Page.printToPDF({
+          displayHeaderFooter: false,
+          printBackground: true,
+          paperWidth: width / 96.0,
+          paperHeight: height / 96.0,
+          pageRanges: '1',
+        });
 
-      const buff = new stream.Readable();
-      buff._read = () => {}; // eslint-disable-line no-underscore-dangle
-      buff.push(Buffer.from(data, 'base64'));
-      buff.push(null);
-      buff.pipe(args.output === 'stdout' ? process.stdout : fs.createWriteStream(args.output));
+        const buff = new stream.Readable();
+        buff._read = () => {}; // eslint-disable-line no-underscore-dangle
+        buff.push(Buffer.from(data, 'base64'));
+        buff.push(null);
+        buff.pipe(args.output === 'stdout' ? process.stdout : fs.createWriteStream(args.output));
+      } finally {
+        await protocol.close();
+        await chrome.kill();
+      }
       break;
     }
     case 'png': {

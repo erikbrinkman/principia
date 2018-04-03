@@ -25,15 +25,15 @@
     "chrome-launcher": "^0.10.2",
     "chrome-remote-interface": "^0.25.5",
     "clean-css": "^4.1.11",
-    "principia-plot": "0.0.8",
+    "principia-plot": "0.0.9",
     "tempy": "^0.2.1",
-    "uglify-es": "^3.3.9",
-    "yargs": "^11.0.0"
+    "uglify-es": "^3.3.10",
+    "yargs": "^11.1.0"
   },
   "devDependencies": {
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-plugin-import": "^2.9.0",
+    "eslint-plugin-import": "^2.10.0",
     "jest": "^22.4.3"
   },
   "jest": {

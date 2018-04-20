@@ -201,13 +201,14 @@ const resources = path.join(root, 'resources');
         /* For some reason, the promise is sometimes invalid, here we retry
          * with exponential backoff. This might not actually be doing
          * anything. */
-        const { result: { objectId } } = await Runtime.evaluate({
-          expression: '__princ.rendered',
-        });
         let description;
         for (let timeout = 1; timeout < 1000; timeout *= 2) {
           description = undefined;
           try {
+            // eslint-disable-next-line no-await-in-loop
+            const { result: { objectId } } = await Runtime.evaluate({
+              expression: '__princ.rendered',
+            });
             // eslint-disable-next-line no-await-in-loop
             ({ result: { description } } = await Runtime.awaitPromise({
               promiseObjectId: objectId,

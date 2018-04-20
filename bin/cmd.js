@@ -198,9 +198,7 @@ const resources = path.join(root, 'resources');
 
       try {
         // await page load
-        /* For some reason, the promise is sometimes invalid, here we retry
-         * with exponential backoff. This might not actually be doing
-         * anything. */
+        // Sometimes the promise fails, so we try with back off
         let description;
         for (let timeout = 1; timeout < 1000; timeout *= 2) {
           description = undefined;

@@ -139,11 +139,11 @@ async function alignXAxisLabel(spacing, shift) { // eslint-disable-line no-unuse
   const center = tx + (twidth / 2);
   const tbbs = Array.from(document.querySelectorAll('.princ--xaxis .princ--tick-label'))
     .map(bbox);
-  const newy = (shift && tbbs.every(({ x, width }) =>
-    (x + width + spacing <= center - (lbb.width / 2)) ||
-    (center + (lbb.width / 2) + spacing <= x))) ?
-    tbbs.map(({ y }) => y).reduce((m, y, i) => m + ((y - m) / (i + 1))) :
-    Math.max(...tbbs.map(({ y, height }) => y + height)) + spacing;
+  const newy = (shift && tbbs.every(({ x, width }) => (
+    (x + width + spacing <= center - (lbb.width / 2))
+    || (center + (lbb.width / 2) + spacing <= x))))
+    ? tbbs.map(({ y }) => y).reduce((m, y, i) => m + ((y - m) / (i + 1)))
+    : Math.max(...tbbs.map(({ y, height }) => y + height)) + spacing;
   label.style.transform = `translate(${center - lbb.x - (lbb.width / 2)}px, ${newy - lbb.y}px)`;
   await render();
 }

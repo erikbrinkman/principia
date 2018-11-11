@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
+const CleanCSS = require('clean-css');
 const chromeLauncher = require('chrome-launcher');
 const chromeRemote = require('chrome-remote-interface');
-const CleanCSS = require('clean-css');
 const cp = require('child_process');
 const fs = require('fs');
+const isWsl = require('is-wsl');
 const path = require('path');
+const randomstring = require('randomstring');
 const stream = require('stream');
 const tempy = require('tempy');
 const uglifyes = require('uglify-es');
@@ -83,6 +85,22 @@ const args = yargs
 
 const root = path.dirname(__dirname);
 const resources = path.join(root, 'resources');
+
+function wslTempFile(ext) {
+  return cp.execFileSync('cmd.exe', ['/C', `echo %temp%\\${randomstring.generate()}.${ext}`]).toString().trim();
+}
+
+function isWslPath(file) {
+  return file.startsWith('/mnt/') && file[6] === '/'
+}
+
+function winToWsl(winPath) {
+  return `/mnt/${winPath[0].toLowerCase()}/${winPath.slice(3).replace(/\\/g, '/')}`;
+}
+
+function wslToWin(wslPath) {
+  return `${wslPath[5].toUpperCase()}:\\${wslPath.slice(7).replace(/\//g, '\\')}`
+}
 
 (async () => {
   switch (args._[0]) {
@@ -183,14 +201,28 @@ const resources = path.join(root, 'resources');
       break;
     }
     case 'pdf': {
-      if (args.input === 'stdin') {
-        args.input = tempy.file({ extension: 'html' });
-        fs.writeFileSync(args.input, fs.readFileSync(0, 'utf8'));
+      let input;
+      if (!isWsl && args.input === 'stdin') {
+        input = tempy.file({ extension: 'html' });
+        fs.writeFileSync(input, fs.readFileSync(0, 'utf8'));
+      } else if (!isWsl) {
+        input = path.resolve(args.input);
+      } else if (args.input === 'stdin') { // Special handling in wsl since chrome needs windows paths
+        input = wslTempFile('html');
+        fs.writeFileSync(winToWsl(input), fs.readFileSync(0, 'utf8'));
+      } else {
+        const absolute = path.resolve(args.input);
+        if (isWslPath(absolute)) {
+          input = wslToWin(absolute);
+        } else {
+          input = wslTempFile('html');
+          fs.copyFileSync(absolute, winToWsl(input));
+        }
       }
       const chrome = await chromeLauncher.launch({
         chromeFlags: ['--headless', '--disable-gpu'],
         // TODO Handle starting url for windows
-        startingUrl: `file://${path.resolve(args.input)}`,
+        startingUrl: `file://${input}`,
       });
       const protocol = await chromeRemote({ port: chrome.port });
       const { Page, Runtime } = protocol;
@@ -204,12 +236,15 @@ const resources = path.join(root, 'resources');
           description = undefined;
           try {
             // eslint-disable-next-line no-await-in-loop
-            const { result: { objectId } } = await Runtime.evaluate({
+            const { result } = await Runtime.evaluate({
               expression: '__princ.rendered',
             });
+            if (result.subtype === 'error') {
+              throw new Error(result.description);
+            }
             // eslint-disable-next-line no-await-in-loop
             ({ result: { description } } = await Runtime.awaitPromise({
-              promiseObjectId: objectId,
+              promiseObjectId: result.objectId,
             }));
             break;
           } catch (err) {

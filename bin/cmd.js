@@ -7,7 +7,6 @@ const cp = require('child_process');
 const fs = require('fs');
 const isWsl = require('is-wsl');
 const path = require('path');
-const randomstring = require('randomstring');
 const stream = require('stream');
 const tempy = require('tempy');
 const uglifyes = require('uglify-es');
@@ -87,7 +86,8 @@ const root = path.dirname(__dirname);
 const resources = path.join(root, 'resources');
 
 function wslTempFile(ext) {
-  return cp.execFileSync('cmd.exe', ['/C', `echo %temp%\\${randomstring.generate()}.${ext}`]).toString().trim();
+  const name = [...crypto.randomBytes(8)].flatMap(b => [Math.floor(b / 16), b % 16]).map(n => n.toString(16)).join('')
+  return cp.execFileSync('cmd.exe', ['/C', `echo %temp%\\${name}.${ext}`]).toString().trim();
 }
 
 function isWslPath(file) {

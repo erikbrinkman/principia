@@ -3,6 +3,7 @@
 const CleanCSS = require('clean-css');
 const chromeLauncher = require('chrome-launcher');
 const chromeRemote = require('chrome-remote-interface');
+const crypto = require('crypto');
 const cp = require('child_process');
 const fs = require('fs');
 const isWsl = require('is-wsl');

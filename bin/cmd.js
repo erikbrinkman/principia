@@ -7,6 +7,7 @@ const html = require('../src/html');
 const append = require('../src/append');
 const pdf = require('../src/pdf');
 const png = require('../src/png');
+const parse = require('../src/parse');
 
 const args = yargs
   .usage(
@@ -22,6 +23,12 @@ const args = yargs
     default: 'stdout',
     describe: 'Output result to a file',
   })
+  .command('auto', 'Convert input data to a viewable graph', ygs => ygs)
+  .command(
+    'parse',
+    'Parse multiple input data types into principia json',
+    ygs => ygs,
+  )
   .command('plot', 'Convert a json spec to an svg', ygs =>
     ygs
       .option('style', {
@@ -108,12 +115,17 @@ const args = yargs
       png(args.input, args.output, args.density, args.quality);
       break;
     }
+    case 'parse': {
+      parse(args.input, args.output);
+      break;
+    }
+    case 'auto':
+    case undefined: {
+      // FIXME run all
+      break;
+    }
     default: {
-      if (args._[0] === undefined) {
-        throw Error('must specify a command');
-      } else {
-        throw Error(`unknown command: ${args._[0]}`);
-      }
+      throw Error(`unknown command: ${args._[0]}`);
     }
   }
 })().catch(err => {

@@ -32,7 +32,7 @@ const solveQP = (() => {
         t = a[k][j];
         a[k][j] = 0;
         for (i = 1; i <= k; i = i + 1) {
-          a[i][j] = a[i][j] + (t * a[i][k]);
+          a[i][j] = a[i][j] + t * a[i][k];
         }
       }
     }
@@ -44,7 +44,7 @@ const solveQP = (() => {
     for (k = 1; k <= n; k = k + 1) {
       t = 0;
       for (i = 1; i < k; i = i + 1) {
-        t = t + (a[i][k] * b[i]);
+        t = t + a[i][k] * b[i];
       }
 
       b[k] = (b[k] - t) / a[k][k];
@@ -55,7 +55,7 @@ const solveQP = (() => {
       b[k] = b[k] / a[k][k];
       t = -b[k];
       for (i = 1; i < k; i = i + 1) {
-        b[i] = b[i] + (t * a[i][k]);
+        b[i] = b[i] + t * a[i][k];
       }
     }
   }
@@ -77,7 +77,7 @@ const solveQP = (() => {
         for (k = 1; k <= jm1; k = k + 1) {
           t = a[k][j];
           for (i = 1; i < k; i = i + 1) {
-            t = t - (a[i][j] * a[i][k]);
+            t = t - a[i][j] * a[i][k];
           }
           t = t / a[k][k];
           a[k][j] = t;
@@ -93,10 +93,48 @@ const solveQP = (() => {
     }
   }
 
-  function qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat, bvec, fdamat, q, meq, iact, nact, iter, work, ierr) {
-    let i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv,
-      temp, sum, t1, tt, gc, gs, nu,
-      t1inf, t2min,
+  function qpgen2(
+    dmat,
+    dvec,
+    fddmat,
+    n,
+    sol,
+    lagr,
+    crval,
+    amat,
+    bvec,
+    fdamat,
+    q,
+    meq,
+    iact,
+    nact,
+    iter,
+    work,
+    ierr,
+  ) {
+    let i,
+      j,
+      l,
+      l1,
+      info,
+      it1,
+      iwzv,
+      iwrv,
+      iwrm,
+      iwsv,
+      iwuv,
+      nvl,
+      r,
+      iwnbv,
+      temp,
+      sum,
+      t1,
+      tt,
+      gc,
+      gs,
+      nu,
+      t1inf,
+      t2min,
       go;
 
     r = Math.min(n, q);
@@ -335,11 +373,9 @@ const solveQP = (() => {
               gc = Math.max(Math.abs(work[i - 1]), Math.abs(work[i]));
               gs = Math.min(Math.abs(work[i - 1]), Math.abs(work[i]));
               if (work[i - 1] >= 0) {
-                temp = Math.abs(gc * Math.sqrt(1 + gs * gs /
-                  (gc * gc)));
+                temp = Math.abs(gc * Math.sqrt(1 + (gs * gs) / (gc * gc)));
               } else {
-                temp = -Math.abs(gc * Math.sqrt(1 + gs * gs /
-                  (gc * gc)));
+                temp = -Math.abs(gc * Math.sqrt(1 + (gs * gs) / (gc * gc)));
               }
               gc = work[i - 1] / temp;
               gs = work[i] / temp;
@@ -359,10 +395,8 @@ const solveQP = (() => {
                 nu = gs / (1 + gc);
                 for (j = 1; j <= n; j = j + 1) {
                   temp = gc * dmat[j][i - 1] + gs * dmat[j][i];
-                  dmat[j][i] = nu * (dmat[j][i - 1] + temp) -
-                    dmat[j][i];
+                  dmat[j][i] = nu * (dmat[j][i - 1] + temp) - dmat[j][i];
                   dmat[j][i - 1] = temp;
-
                 }
               }
             }
@@ -400,9 +434,9 @@ const solveQP = (() => {
       gc = Math.max(Math.abs(work[l1 - 1]), Math.abs(work[l1]));
       gs = Math.min(Math.abs(work[l1 - 1]), Math.abs(work[l1]));
       if (work[l1 - 1] >= 0) {
-        temp = Math.abs(gc * Math.sqrt(1 + gs * gs / (gc * gc)));
+        temp = Math.abs(gc * Math.sqrt(1 + (gs * gs) / (gc * gc)));
       } else {
-        temp = -Math.abs(gc * Math.sqrt(1 + gs * gs / (gc * gc)));
+        temp = -Math.abs(gc * Math.sqrt(1 + (gs * gs) / (gc * gc)));
       }
       gc = work[l1 - 1] / temp;
       gs = work[l1] / temp;
@@ -432,8 +466,7 @@ const solveQP = (() => {
         }
         for (i = 1; i <= n; i = i + 1) {
           temp = gc * dmat[i][it1] + gs * dmat[i][it1 + 1];
-          dmat[i][it1 + 1] = nu * (dmat[i][it1] + temp) -
-            dmat[i][it1 + 1];
+          dmat[i][it1 + 1] = nu * (dmat[i][it1] + temp) - dmat[i][it1 + 1];
           dmat[i][it1] = temp;
         }
       }
@@ -499,7 +532,6 @@ const solveQP = (() => {
         }
       }
     }
-
   }
 
   /** Solve a quadratic program
@@ -517,10 +549,18 @@ const solveQP = (() => {
     Amat.forEach(r => r.unshift(undefined));
     [Dmat, dvec, Amat, bvec].forEach(m => m.unshift(undefined));
 
-    let i, n, q,
-      nact, r,
-      crval = [], iact = [], sol = [], lagr = [], work = [], iter = [],
-      message = "";
+    let i,
+      n,
+      q,
+      nact,
+      r,
+      crval = [],
+      iact = [],
+      sol = [],
+      lagr = [],
+      work = [],
+      iter = [],
+      message = '';
     let factorized = [undefined, 0];
     let meq = 0; // Number of equality cons
 
@@ -529,24 +569,24 @@ const solveQP = (() => {
     q = Amat[1].length - 1;
 
     if (n !== Dmat[1].length - 1) {
-      message = "Dmat is not symmetric!";
+      message = 'Dmat is not symmetric!';
     }
     if (n !== dvec.length - 1) {
-      message = "Dmat and dvec are incompatible!";
+      message = 'Dmat and dvec are incompatible!';
     }
     if (n !== Amat.length - 1) {
-      message = "Amat and dvec are incompatible!";
+      message = 'Amat and dvec are incompatible!';
     }
     if (q !== bvec.length - 1) {
-      message = "Amat and bvec are incompatible!";
+      message = 'Amat and bvec are incompatible!';
     }
-    if ((meq > q) || (meq < 0)) {
-      message = "Value of meq is invalid!";
+    if (meq > q || meq < 0) {
+      message = 'Value of meq is invalid!';
     }
 
-    if (message !== "") {
+    if (message !== '') {
       return {
-        message: message
+        message: message,
       };
     }
 
@@ -560,21 +600,38 @@ const solveQP = (() => {
       sol[i] = 0;
     }
     crval[1] = 0;
-    for (i = 1; i <= (2 * n + (r * (r + 5)) / 2 + 2 * q + 1); i = i + 1) {
+    for (i = 1; i <= 2 * n + (r * (r + 5)) / 2 + 2 * q + 1; i = i + 1) {
       work[i] = 0;
     }
     for (i = 1; i <= 2; i = i + 1) {
       iter[i] = 0;
     }
 
-    qpgen2(Dmat, dvec, n, n, sol, lagr, crval, Amat,
-      bvec, n, q, meq, iact, nact, iter, work, factorized);
+    qpgen2(
+      Dmat,
+      dvec,
+      n,
+      n,
+      sol,
+      lagr,
+      crval,
+      Amat,
+      bvec,
+      n,
+      q,
+      meq,
+      iact,
+      nact,
+      iter,
+      work,
+      factorized,
+    );
 
     if (factorized[1] === 1) {
-      message = "constraints are inconsistent, no solution!";
+      message = 'constraints are inconsistent, no solution!';
     }
     if (factorized[1] === 2) {
-      message = "matrix D in quadratic function is not positive definite!";
+      message = 'matrix D in quadratic function is not positive definite!';
     }
 
     if (message) {

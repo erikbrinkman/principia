@@ -14,7 +14,9 @@ const uglifyes = require('uglify-es');
 const yargs = require('yargs');
 
 const args = yargs
-  .usage('$0 <command>\n\nGenerate and render principia plots. See https://github.com/erikbrinkman/principia#readme for more information.')
+  .usage(
+    '$0 <command>\n\nGenerate and render principia plots. See https://github.com/erikbrinkman/principia#readme for more information.',
+  )
   .option('input', {
     alias: 'i',
     default: 'stdin',
@@ -25,82 +27,98 @@ const args = yargs
     default: 'stdout',
     describe: 'Output result to a file',
   })
-  .command('plot', 'Convert a json spec to an svg', ygs => ygs
-    .option('style', {
-      alias: ['css', 'c', 's'],
-      array: true,
-      default: [],
-    })
-    .help(false))
-  .command('append [stylesheet...]', 'Append css files to an svg', ygs => ygs
-    .positional('stylesheet', {
+  .command('plot', 'Convert a json spec to an svg', ygs =>
+    ygs
+      .option('style', {
+        alias: ['css', 'c', 's'],
+        array: true,
+        default: [],
+      })
+      .help(false),
+  )
+  .command('append [stylesheet...]', 'Append css files to an svg', ygs =>
+    ygs.positional('stylesheet', {
       describe: 'Stylesheet to append to svg',
       type: 'string',
-    }))
-  .command('html', 'Render an svg as html', ygs => ygs
-    .option('yaxis-label', {
-      type: 'number',
-      describe: 'align the y axis label with spacing between top tick',
-    })
-    .option('yaxis-ticks', {
-      type: 'number',
-      describe: 'space apart the y axis tick labels',
-    })
-    .option('xaxis-label', {
-      type: 'number',
-      describe: 'align the x axis label with spacing between ticks',
-    })
-    .option('xaxis-ticks', {
-      type: 'number',
-      describe: 'space apart the x axis tick labels',
-    })
-    .option('label', {
-      type: 'number',
-      describe: 'space apart evolution labels',
-    })
-    .option('name', {
-      type: 'number',
-      describe: 'align comparisonz names to the left of values with spacing',
-    })
-    .option('num', {
-      type: 'number',
-      describe: 'align comparisonz numbers to right of values with spacing',
-    }))
+    }),
+  )
+  .command('html', 'Render an svg as html', ygs =>
+    ygs
+      .option('yaxis-label', {
+        type: 'number',
+        describe: 'align the y axis label with spacing between top tick',
+      })
+      .option('yaxis-ticks', {
+        type: 'number',
+        describe: 'space apart the y axis tick labels',
+      })
+      .option('xaxis-label', {
+        type: 'number',
+        describe: 'align the x axis label with spacing between ticks',
+      })
+      .option('xaxis-ticks', {
+        type: 'number',
+        describe: 'space apart the x axis tick labels',
+      })
+      .option('label', {
+        type: 'number',
+        describe: 'space apart evolution labels',
+      })
+      .option('name', {
+        type: 'number',
+        describe: 'align comparisonz names to the left of values with spacing',
+      })
+      .option('num', {
+        type: 'number',
+        describe: 'align comparisonz numbers to right of values with spacing',
+      }),
+  )
   .command('pdf', 'Render html as a pdf')
-  .command('png', 'Render a pdf as a png', ygs => ygs
-    .option('density', {
-      describe: 'How densly to sample the pdf for png creation',
-      type: 'number',
-      default: 300,
-    })
-    .option('quality', {
-      describe: 'The png quality',
-      type: 'number',
-      default: 100,
-    }))
+  .command('png', 'Render a pdf as a png', ygs =>
+    ygs
+      .option('density', {
+        describe: 'How densly to sample the pdf for png creation',
+        type: 'number',
+        default: 300,
+      })
+      .option('quality', {
+        describe: 'The png quality',
+        type: 'number',
+        default: 100,
+      }),
+  )
   .help()
   .alias('help', 'h')
-  .alias('version', 'V')
-  .argv;
+  .alias('version', 'V').argv;
 
 const root = path.dirname(__dirname);
 const resources = path.join(root, 'resources');
 
 function wslTempFile(ext) {
-  const name = [...crypto.randomBytes(8)].flatMap(b => [Math.floor(b / 16), b % 16]).map(n => n.toString(16)).join('')
-  return cp.execFileSync('cmd.exe', ['/C', `echo %temp%\\${name}.${ext}`]).toString().trim();
+  const name = [...crypto.randomBytes(8)]
+    .flatMap(b => [Math.floor(b / 16), b % 16])
+    .map(n => n.toString(16))
+    .join('');
+  return cp
+    .execFileSync('cmd.exe', ['/C', `echo %temp%\\${name}.${ext}`])
+    .toString()
+    .trim();
 }
 
 function isWslPath(file) {
-  return file.startsWith('/mnt/') && file[6] === '/'
+  return file.startsWith('/mnt/') && file[6] === '/';
 }
 
 function winToWsl(winPath) {
-  return `/mnt/${winPath[0].toLowerCase()}/${winPath.slice(3).replace(/\\/g, '/')}`;
+  return `/mnt/${winPath[0].toLowerCase()}/${winPath
+    .slice(3)
+    .replace(/\\/g, '/')}`;
 }
 
 function wslToWin(wslPath) {
-  return `${wslPath[5].toUpperCase()}:\\${wslPath.slice(7).replace(/\//g, '\\')}`
+  return `${wslPath[5].toUpperCase()}:\\${wslPath
+    .slice(7)
+    .replace(/\//g, '\\')}`;
 }
 
 (async () => {
@@ -125,25 +143,39 @@ function wslToWin(wslPath) {
     }
     case 'html': {
       const cleancss = new CleanCSS();
-      const svg = fs.readFileSync(args.input === 'stdin' ? 0 : args.input, 'utf8').trim();
+      const svg = fs
+        .readFileSync(args.input === 'stdin' ? 0 : args.input, 'utf8')
+        .trim();
       if (!svg.startsWith('<svg')) {
         throw Error('an svg must start with "<svg"');
       }
       // TODO Make these async
-      const style = cleancss.minify(fs.readFileSync(path.join(resources, 'style.css'), 'utf8')).styles;
-      const quadprog = uglifyes.minify(fs.readFileSync(path.join(resources, 'quadprog.js'), 'utf8')).code;
-      const preScript = uglifyes.minify(fs.readFileSync(path.join(resources, 'pre_script.js'), 'utf8')).code;
-      const postScript = uglifyes.minify(fs.readFileSync(path.join(resources, 'post_script.js'), 'utf8')).code;
+      const style = cleancss.minify(
+        fs.readFileSync(path.join(resources, 'style.css'), 'utf8'),
+      ).styles;
+      const quadprog = uglifyes.minify(
+        fs.readFileSync(path.join(resources, 'quadprog.js'), 'utf8'),
+      ).code;
+      const preScript = uglifyes.minify(
+        fs.readFileSync(path.join(resources, 'pre_script.js'), 'utf8'),
+      ).code;
+      const postScript = uglifyes.minify(
+        fs.readFileSync(path.join(resources, 'post_script.js'), 'utf8'),
+      ).code;
 
       const buff = new stream.Readable();
       buff._read = () => {}; // eslint-disable-line no-underscore-dangle
       buff.push('<!doctype html><html><head><script>');
-      buff.push('window.__princ={};__princ.rendered=new Promise((res,rej)=>{__princ.res=res;__princ.rej=rej;});');
+      buff.push(
+        'window.__princ={};__princ.rendered=new Promise((res,rej)=>{__princ.res=res;__princ.rej=rej;});',
+      );
       buff.push('</script><style>');
       buff.push(style);
       buff.push('</style></head><body>');
       buff.push(svg);
-      buff.push('<script>"use strict";addEventListener("load", async () => {try{');
+      buff.push(
+        '<script>"use strict";addEventListener("load", async () => {try{',
+      );
       buff.push(quadprog);
       buff.push(preScript);
 
@@ -171,34 +203,58 @@ function wslToWin(wslPath) {
       }
 
       buff.push(postScript);
-      buff.push('}catch(err){__princ.rej(err);return;};__princ.res();});</script></body></html>');
+      buff.push(
+        '}catch(err){__princ.rej(err);return;};__princ.res();});</script></body></html>',
+      );
       buff.push(null);
-      buff.pipe(args.output === 'stdout' ? process.stdout : fs.createWriteStream(args.output));
+      buff.pipe(
+        args.output === 'stdout'
+          ? process.stdout
+          : fs.createWriteStream(args.output),
+      );
       break;
     }
     case 'append': {
       const cleancss = new CleanCSS();
-      const svg = fs.readFileSync(args.input === 'stdin' ? 0 : args.input, 'utf8').trim();
+      const svg = fs
+        .readFileSync(args.input === 'stdin' ? 0 : args.input, 'utf8')
+        .trim();
       const end = '</style></svg>';
       if (!svg.startsWith('<svg') || !svg.endsWith(end)) {
-        throw Error('a principia svg must start with "<svg" and end with "</style></svg>"');
+        throw Error(
+          'a principia svg must start with "<svg" and end with "</style></svg>"',
+        );
       }
       const buff = new stream.Readable();
       buff._read = () => {}; // eslint-disable-line no-underscore-dangle
       buff.push(svg.slice(0, -end.length));
-      args.stylesheet.forEach((file) => {
-        const minified = cleancss.minify(fs.readFileSync(file === '-' ? 0 : file, 'utf8'));
+      args.stylesheet.forEach(file => {
+        const minified = cleancss.minify(
+          fs.readFileSync(file === '-' ? 0 : file, 'utf8'),
+        );
         if (minified.errors.length) {
-          throw new Error(`Couldn't parse css from file ${file}. Got errors ${minified.errors.join(' ')}`);
+          throw new Error(
+            `Couldn't parse css from file ${file}. Got errors ${minified.errors.join(
+              ' ',
+            )}`,
+          );
         } else if (minified.warnings.length) {
-          throw new Error(`Couldn't parse css from file ${file}. Got warnings ${minified.warnings.join(' ')}`);
+          throw new Error(
+            `Couldn't parse css from file ${file}. Got warnings ${minified.warnings.join(
+              ' ',
+            )}`,
+          );
         } else {
           buff.push(minified.styles);
         }
       });
       buff.push(end);
       buff.push(null);
-      buff.pipe(args.output === 'stdout' ? process.stdout : fs.createWriteStream(args.output));
+      buff.pipe(
+        args.output === 'stdout'
+          ? process.stdout
+          : fs.createWriteStream(args.output),
+      );
       break;
     }
     case 'pdf': {
@@ -208,7 +264,8 @@ function wslToWin(wslPath) {
         fs.writeFileSync(input, fs.readFileSync(0, 'utf8'));
       } else if (!isWsl) {
         input = path.resolve(args.input);
-      } else if (args.input === 'stdin') { // Special handling in wsl since chrome needs windows paths
+      } else if (args.input === 'stdin') {
+        // Special handling in wsl since chrome needs windows paths
         input = wslTempFile('html');
         fs.writeFileSync(winToWsl(input), fs.readFileSync(0, 'utf8'));
       } else {
@@ -244,7 +301,9 @@ function wslToWin(wslPath) {
               throw new Error(result.description);
             }
             // eslint-disable-next-line no-await-in-loop
-            ({ result: { description } } = await Runtime.awaitPromise({
+            ({
+              result: { description },
+            } = await Runtime.awaitPromise({
               promiseObjectId: result.objectId,
             }));
             break;
@@ -258,8 +317,13 @@ function wslToWin(wslPath) {
           throw description;
         }
 
-        const { result: { value: { width, height } } } = await Runtime.evaluate({
-          expression: 'rect = document.documentElement.getBoundingClientRect(); res = {width: rect.width, height: rect.height}',
+        const {
+          result: {
+            value: { width, height },
+          },
+        } = await Runtime.evaluate({
+          expression:
+            'rect = document.documentElement.getBoundingClientRect(); res = {width: rect.width, height: rect.height}',
           returnByValue: true,
         });
         const { data } = await Page.printToPDF({
@@ -274,7 +338,11 @@ function wslToWin(wslPath) {
         buff._read = () => {}; // eslint-disable-line no-underscore-dangle
         buff.push(Buffer.from(data, 'base64'));
         buff.push(null);
-        buff.pipe(args.output === 'stdout' ? process.stdout : fs.createWriteStream(args.output));
+        buff.pipe(
+          args.output === 'stdout'
+            ? process.stdout
+            : fs.createWriteStream(args.output),
+        );
       } finally {
         await protocol.close();
         await chrome.kill();
@@ -283,11 +351,15 @@ function wslToWin(wslPath) {
     }
     case 'png': {
       cp.execFileSync(
-        'convert', [
-          '-density', args.density,
+        'convert',
+        [
+          '-density',
+          args.density,
           args.input === 'stdin' ? '-' : args.input,
-          '-quality', args.quality,
-          args.output === 'stdout' ? '-' : args.output],
+          '-quality',
+          args.quality,
+          args.output === 'stdout' ? '-' : args.output,
+        ],
         { stdio: 'inherit' },
       );
       break;
@@ -300,7 +372,7 @@ function wslToWin(wslPath) {
       }
     }
   }
-})().catch((err) => {
+})().catch(err => {
   process.stderr.write(`${err.toString()}\n`);
   process.exit(1);
 });

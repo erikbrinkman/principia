@@ -5,6 +5,7 @@
   "bin": "bin/cmd.js",
   "scripts": {
     "test": "jest --forceExit",
+    "format": "prettier --write bin/cmd.js test/*.js resources/*.js",
     "lint": "eslint bin/cmd.js resources/post_script.js resources/pre_script.js test/*.js",
     "todo": "grep -nrEI 'FIXME|TODO|XXX' bin test resources"
   },
@@ -33,9 +34,8 @@
   },
   "devDependencies": {
     "eslint": "^5.13.0",
-    "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-plugin-import": "^2.16.0",
-    "jest": "^24.0.0"
+    "jest": "^24.0.0",
+    "prettier": "^1.16.3"
   },
   "jest": {
     "moduleFileExtensions": [

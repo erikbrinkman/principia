@@ -23,20 +23,20 @@
   },
   "homepage": "https://github.com/erikbrinkman/principia#readme",
   "dependencies": {
-    "chrome-launcher": "^0.10.5",
-    "chrome-remote-interface": "^0.27.0",
+    "chrome-launcher": "^0.13.4",
+    "chrome-remote-interface": "^0.29.0",
     "clean-css": "^4.2.1",
-    "is-wsl": "^1.1.0",
-    "principia-plot": "0.0.11",
-    "tempy": "^0.2.1",
+    "is-wsl": "^2.2.0",
+    "principia-plot": "0.0.12",
+    "tempy": "^1.0.0",
     "uglify-es": "^3.3.9",
-    "yargs": "^12.0.5"
+    "yargs": "^16.2.0"
   },
   "devDependencies": {
-    "acorn": "^6.4.0",
-    "eslint": "^5.13.0",
-    "jest": "^24.0.0",
-    "prettier": "^1.16.3"
+    "acorn": "^8.0.4",
+    "eslint": "^7.18.0",
+    "jest": "^26.6.3",
+    "prettier": "^2.2.1"
   },
   "jest": {
     "moduleFileExtensions": [

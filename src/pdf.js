@@ -55,11 +55,14 @@ async function pdf(input_path, output) {
       fs.copyFileSync(absolute, winToWsl(input));
     }
   }
+  // FIXME isWsl no longer works
+  console.error('trying to start', isWsl)
   const chrome = await chromeLauncher.launch({
     chromeFlags: ['--headless', '--disable-gpu'],
     // TODO Handle starting url for windows
     startingUrl: `file://${input}`,
   });
+  console.error('info', isWsl, chrome)
   const protocol = await chromeRemote({ port: chrome.port });
   const { Page, Runtime } = protocol;
   await Promise.all([Page.enable(), Runtime.enable()]);

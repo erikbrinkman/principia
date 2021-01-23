@@ -23,13 +23,13 @@ const args = yargs
     default: 'stdout',
     describe: 'Output result to a file',
   })
-  .command('auto', 'Convert input data to a viewable graph', ygs => ygs)
+  .command('auto', 'Convert input data to a viewable graph', (ygs) => ygs)
   .command(
     'parse',
     'Parse multiple input data types into principia json',
-    ygs => ygs,
+    (ygs) => ygs,
   )
-  .command('plot', 'Convert a json spec to an svg', ygs =>
+  .command('plot', 'Convert a json spec to an svg', (ygs) =>
     ygs
       .option('style', {
         alias: ['css', 'c', 's'],
@@ -38,13 +38,13 @@ const args = yargs
       })
       .help(false),
   )
-  .command('append [stylesheet...]', 'Append css files to an svg', ygs =>
+  .command('append [stylesheet...]', 'Append css files to an svg', (ygs) =>
     ygs.positional('stylesheet', {
       describe: 'Stylesheet to append to svg',
       type: 'string',
     }),
   )
-  .command('html', 'Render an svg as html', ygs =>
+  .command('html', 'Render an svg as html', (ygs) =>
     ygs
       .option('yaxis-label', {
         type: 'number',
@@ -76,7 +76,7 @@ const args = yargs
       }),
   )
   .command('pdf', 'Render html as a pdf')
-  .command('png', 'Render a pdf as a png', ygs =>
+  .command('png', 'Render a pdf as a png', (ygs) =>
     ygs
       .option('density', {
         describe: 'How densly to sample the pdf for png creation',
@@ -128,7 +128,7 @@ const args = yargs
       throw Error(`unknown command: ${args._[0]}`);
     }
   }
-})().catch(err => {
+})().catch((err) => {
   process.stderr.write(`${err.toString()}\n`);
   process.exit(1);
 });

@@ -18,6 +18,10 @@ Install
 ```
 npm i -g principia
 ```
+or
+```
+yarn global add principia
+```
 
 Usage
 -----
@@ -54,12 +58,3 @@ principia png
 ```
 Use image magick to convert a pdf into a png.
 This is simply a wrapper around the `convert` command line tool, and requires that it is installed along with `libpng` and `ghostscript`.
-
-
-Development
-===========
-
-```
-npm run lint
-```
-will lint everything.

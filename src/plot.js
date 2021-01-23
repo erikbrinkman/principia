@@ -8,7 +8,7 @@ function plot(name, input, output, style, shortHelp, longHelp) {
   const params = ['-i', input, '-o', output].concat(
     longHelp ? ['--help'] : [],
     shortHelp ? ['-h'] : [],
-    ...style.map(sty => ['--css', sty]),
+    ...style.map((sty) => ['--css', sty]),
   );
   // XXX This is necessary because principia-plot may not be installed
   // where we want it. I could not find a better solution.

@@ -1,68 +1,33 @@
+// hot patch to disable isWsl
+require('is-wsl');
+const testWslPath = /\/is-wsl\//;
+const paths = Object.keys(require.cache).filter((p) => testWslPath.test(p));
+for (const path of paths) {
+  require.cache[path].exports = false;
+}
+
+// real imports, must be after patch
 const chromeLauncher = require('chrome-launcher');
 const cp = require('child_process');
 const chromeRemote = require('chrome-remote-interface');
 const crypto = require('crypto');
-const isWsl = require('is-wsl');
 const fs = require('fs');
 const path = require('path');
 const stream = require('stream');
 const tempy = require('tempy');
 
-function wslTempFile(ext) {
-  const name = [...crypto.randomBytes(8)]
-    .flatMap(b => [Math.floor(b / 16), b % 16])
-    .map(n => n.toString(16))
-    .join('');
-  return cp
-    .execFileSync('cmd.exe', ['/C', `echo %temp%\\${name}.${ext}`])
-    .toString()
-    .trim();
-}
-
-function isWslPath(file) {
-  return file.startsWith('/mnt/') && file[6] === '/';
-}
-
-function winToWsl(winPath) {
-  return `/mnt/${winPath[0].toLowerCase()}/${winPath
-    .slice(3)
-    .replace(/\\/g, '/')}`;
-}
-
-function wslToWin(wslPath) {
-  return `${wslPath[5].toUpperCase()}:\\${wslPath
-    .slice(7)
-    .replace(/\//g, '\\')}`;
-}
-
 async function pdf(input_path, output) {
   let input;
-  if (!isWsl && input_path === 'stdin') {
+  if (input_path === 'stdin') {
     input = tempy.file({ extension: 'html' });
     fs.writeFileSync(input, fs.readFileSync(0, 'utf8'));
-  } else if (!isWsl) {
-    input = path.resolve(input_path);
-  } else if (input_path === 'stdin') {
-    // Special handling in wsl since chrome needs windows paths
-    input = wslTempFile('html');
-    fs.writeFileSync(winToWsl(input), fs.readFileSync(0, 'utf8'));
   } else {
-    const absolute = path.resolve(input_path);
-    if (isWslPath(absolute)) {
-      input = wslToWin(absolute);
-    } else {
-      input = wslTempFile('html');
-      fs.copyFileSync(absolute, winToWsl(input));
-    }
+    input = path.resolve(input_path);
   }
-  // FIXME isWsl no longer works
-  console.error('trying to start', isWsl)
   const chrome = await chromeLauncher.launch({
     chromeFlags: ['--headless', '--disable-gpu'],
-    // TODO Handle starting url for windows
     startingUrl: `file://${input}`,
   });
-  console.error('info', isWsl, chrome)
   const protocol = await chromeRemote({ port: chrome.port });
   const { Page, Runtime } = protocol;
   await Promise.all([Page.enable(), Runtime.enable()]);
@@ -91,7 +56,7 @@ async function pdf(input_path, output) {
       } catch (err) {
         description = err;
         // eslint-disable-next-line no-await-in-loop
-        await new Promise(resolve => setTimeout(resolve, timeout));
+        await new Promise((resolve) => setTimeout(resolve, timeout));
       }
     }
     if (description !== undefined) {

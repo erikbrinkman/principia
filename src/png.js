@@ -9,7 +9,7 @@ function png(input, output, density, quality) {
       input === 'stdin' ? '-' : input,
       '-quality',
       quality,
-      output === 'stdout' ? '-' : output,
+      `png:${output === 'stdout' ? '-' : output}`,
     ],
     { stdio: 'inherit' },
   );

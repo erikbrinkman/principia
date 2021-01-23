@@ -2,10 +2,7 @@
 function bbox(elem) {
   const bb = elem.getBBox();
   const svg = elem.ownerSVGElement;
-  const mat = svg
-    .getScreenCTM()
-    .inverse()
-    .multiply(elem.getScreenCTM());
+  const mat = svg.getScreenCTM().inverse().multiply(elem.getScreenCTM());
 
   // Create an array of all four points for the original bounding box
   const corners = [
@@ -39,7 +36,7 @@ function spaceApartCalc(elements, spacing, bounds = [undefined, undefined]) {
   // Sort so that constraints are convex
   const centers = elements.map(([x, w]) => x + w / 2);
   const ord = centers.map((_, i) => i).sort((a, b) => centers[a] - centers[b]);
-  const sorted = ord.map(i => elements[i]);
+  const sorted = ord.map((i) => elements[i]);
 
   // Construct base constraints and objective
   const Q = centers.map((_, i) => {
@@ -84,7 +81,7 @@ function spaceApartCalc(elements, spacing, bounds = [undefined, undefined]) {
 
 /** Await rendering */
 async function render(time = 0) {
-  await new Promise(resolve => setTimeout(resolve, time));
+  await new Promise((resolve) => setTimeout(resolve, time));
 }
 
 /** Space elements apart along the y axis */
@@ -95,7 +92,7 @@ async function spaceApartX(elements, spacing, bounds) {
   });
   await render();
   const offsets = spaceApartCalc(
-    elems.map(elem => {
+    elems.map((elem) => {
       const box = bbox(elem);
       return [box.x, box.width];
     }),
@@ -116,7 +113,7 @@ async function spaceApartY(elements, spacing, bounds) {
   });
   await render();
   const offsets = spaceApartCalc(
-    elems.map(elem => {
+    elems.map((elem) => {
       const box = bbox(elem);
       return [box.y, box.height];
     }),
@@ -141,10 +138,9 @@ async function alignYAxisLabel(spacing) {
   )
     .map(bbox)
     .reduce((a, b) => (a.y < b.y ? a : b));
-  label.style.transform = `translate(${tbb.x - lbb.x}px, ${tbb.y -
-    lbb.y -
-    lbb.height -
-    spacing}px)`;
+  label.style.transform = `translate(${tbb.x - lbb.x}px, ${
+    tbb.y - lbb.y - lbb.height - spacing
+  }px)`;
   await render();
 }
 
@@ -172,9 +168,9 @@ async function alignXAxisLabel(spacing, shift) {
     )
       ? tbbs.map(({ y }) => y).reduce((m, y, i) => m + (y - m) / (i + 1))
       : Math.max(...tbbs.map(({ y, height }) => y + height)) + spacing;
-  label.style.transform = `translate(${center -
-    lbb.x -
-    lbb.width / 2}px, ${newy - lbb.y}px)`;
+  label.style.transform = `translate(${center - lbb.x - lbb.width / 2}px, ${
+    newy - lbb.y
+  }px)`;
   await render();
 }
 
@@ -241,7 +237,7 @@ async function spaceApartEvolutionLabels(spacing) {
   // eslint-disable-line no-unused-vars
   const { y } = bbox(document.querySelector('.princ--xaxis .princ--tick-line'));
   await spaceApartY(
-    Array.from(document.querySelectorAll('.princ--label')).filter(elem => {
+    Array.from(document.querySelectorAll('.princ--label')).filter((elem) => {
       const { width, height } = elem.getBBox();
       return width > 0 && height > 0;
     }),
@@ -249,7 +245,7 @@ async function spaceApartEvolutionLabels(spacing) {
     [undefined, y],
   );
   await spaceApartY(
-    Array.from(document.querySelectorAll('.princ--label')).filter(elem => {
+    Array.from(document.querySelectorAll('.princ--label')).filter((elem) => {
       const { width, height } = elem.getBBox();
       return width > 0 && height > 0;
     }),

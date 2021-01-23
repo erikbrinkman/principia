@@ -540,14 +540,14 @@ const solveQP = (() => {
    * st A x <= b
    */
   function solveQP(Q, c, A, b) {
-    let Dmat = Q.map(r => r.slice());
-    let dvec = c.map(v => -v);
-    let Amat = c.map((_, i) => A.map(r => -r[i]));
-    let bvec = b.map(v => -v);
+    let Dmat = Q.map((r) => r.slice());
+    let dvec = c.map((v) => -v);
+    let Amat = c.map((_, i) => A.map((r) => -r[i]));
+    let bvec = b.map((v) => -v);
 
-    Dmat.forEach(r => r.unshift(undefined));
-    Amat.forEach(r => r.unshift(undefined));
-    [Dmat, dvec, Amat, bvec].forEach(m => m.unshift(undefined));
+    Dmat.forEach((r) => r.unshift(undefined));
+    Amat.forEach((r) => r.unshift(undefined));
+    [Dmat, dvec, Amat, bvec].forEach((m) => m.unshift(undefined));
 
     let i,
       n,

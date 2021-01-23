@@ -14,7 +14,7 @@ function append(input, output, stylesheet) {
   const buff = new stream.Readable();
   buff._read = () => {}; // eslint-disable-line no-underscore-dangle
   buff.push(svg.slice(0, -end.length));
-  stylesheet.forEach(file => {
+  stylesheet.forEach((file) => {
     const minified = cleancss.minify(
       fs.readFileSync(file === '-' ? 0 : file, 'utf8'),
     );

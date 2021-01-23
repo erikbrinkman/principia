@@ -1,7 +1,10 @@
 {
   "type": "evolution",
   "xaxis": {
-    "label": "Year"
+    "label": "Year",
+    "ticks": [
+      1983
+    ]
   },
   "yaxis": {
     "label": "Percent Female Enrollment",
@@ -12,7 +15,6 @@
   },
   "data": [
     {
-      "type": "line",
       "label": "Biology",
       "data": [
         [
@@ -186,7 +188,6 @@
       ]
     },
     {
-      "type": "line",
       "label": "Computer Science",
       "data": [
         [
@@ -360,7 +361,6 @@
       ]
     },
     {
-      "type": "line",
       "label": "Health Professions",
       "data": [
         [
@@ -534,7 +534,6 @@
       ]
     },
     {
-      "type": "line",
       "label": "Math and Statistics",
       "data": [
         [
@@ -708,7 +707,6 @@
       ]
     },
     {
-      "type": "line",
       "label": "Psychology",
       "data": [
         [

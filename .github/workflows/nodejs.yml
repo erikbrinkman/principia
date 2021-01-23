@@ -19,7 +19,11 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: sudo apt install imagemagick
+    - name: install imagemagick
+      run: |
+        sudo apt install imagemagick
+        # delete security policy, only processing our own pdfs, so ok
+        sudo rm /etc/ImageMagick-6/policy.xml
     - name: yarn install, test, lint
       run: |
         yarn install

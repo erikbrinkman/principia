@@ -19,7 +19,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: apt install imagemagick
+    - run: sudo apt install imagemagick
     - name: yarn install, test, lint
       run: |
         yarn install

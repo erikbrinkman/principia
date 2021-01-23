@@ -27,5 +27,5 @@ jobs:
     - name: yarn install, test, lint
       run: |
         yarn install
-        env TMPDIR=${{ runner.temp }} yarn test
+        yarn test
         yarn lint

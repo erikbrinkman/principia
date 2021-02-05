@@ -1,4 +1,11 @@
-import { CSSProperties, compile, d3, JSONSchemaType, React, ReactElement } from "../deps.ts";
+import {
+  compile,
+  CSSProperties,
+  d3,
+  JSONSchemaType,
+  React,
+  ReactElement,
+} from "../deps.ts";
 import { ContinuousScale, Format, Formatter, n } from "./types.ts";
 
 export interface AbsoluteComparisonDatum {

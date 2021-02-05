@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-undef
 // ^document
 
-
 export interface AlignArgs {
   yticks?: number | null;
   ylabel?: number | null;

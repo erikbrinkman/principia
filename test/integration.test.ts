@@ -125,8 +125,24 @@ Deno.test("converts evolution heart rate", async () => {
   );
 });
 
+Deno.test("converts evolution with long rendering time", async () => {
+  const base = "./evolution.ex.long_render";
+  const jsonFile = new URL(`${base}.json`, import.meta.url).pathname;
+  const svgFile = new URL(`${base}.svg`, import.meta.url).pathname;
+
+  // convert to svg
+  await run("plot", jsonFile, svgFile);
+
+  // render
+  await run(
+    "render",
+    svgFile,
+    new URL(`${base}.png`, import.meta.url).pathname,
+  );
+});
+
 Deno.test("converts absolute comparison", async () => {
-  const base = "./absolute-comparison.ex.bachelor";
+  const base = "./absolute_comparison.ex.bachelor";
   const jsonFile = new URL(`${base}.json`, import.meta.url).pathname;
   const svgFile = new URL(`${base}.svg`, import.meta.url).pathname;
 

@@ -16,10 +16,9 @@
   },
   "data": [
     {
-      "type": "line",
       "curve": "linear",
       "label": "Fundamental",
-      "classed": "princ--umich-maize",
+      "color": "var(--umich-maize)",
       "data": [
         [
           0,
@@ -19856,8 +19855,7 @@
       ]
     },
     {
-      "type": "line",
-      "curve": "step_after",
+      "curve": "stepAfter",
       "data": [
         [
           1311,
@@ -19933,11 +19931,10 @@
         ]
       ],
       "label": "Price - Without Shock",
-      "classed": "princ--jeanluc-grey"
+      "color": "var(--jeanluc-grey)"
     },
     {
-      "type": "line",
-      "curve": "step_after",
+      "curve": "stepAfter",
       "data": [
         [
           1311,
@@ -20237,7 +20234,7 @@
         ]
       ],
       "label": "Price - With Shock",
-      "classed": "princ--umich-blue"
+      "color": "var(--umich-blue)"
     }
   ]
 }

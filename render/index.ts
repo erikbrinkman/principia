@@ -35,9 +35,12 @@ export default async function render(
   const browser = await puppeteer.launch({ executablePath: chromePath });
   try {
     const page = await browser.newPage();
-    await page.goto(`data:text/html,${encodeURIComponent(svgData)}`, {
-      waitUntil: "networkidle0",
-    });
+    await page.goto(
+      `data:text/html;charset=utf-8,${encodeURIComponent(svgData)}`,
+      {
+        waitUntil: "networkidle0",
+      },
+    );
     // log console if verbose
     if (verbosity) {
       page.on("console", async (msg) => {

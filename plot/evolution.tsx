@@ -1,4 +1,11 @@
-import { CSSProperties, compile, d3, JSONSchemaType, React, ReactElement } from "../deps.ts";
+import {
+  compile,
+  CSSProperties,
+  d3,
+  JSONSchemaType,
+  React,
+  ReactElement,
+} from "../deps.ts";
 import {
   ContinuousScale,
   Curve,
@@ -233,7 +240,7 @@ function EvoDatum(
     </g>
   </g>);
   return <g
-    className="princ-item princ-item-span"
+    className="princ-item"
     style={{ "--color": color } as CSSProperties}
   >
     {spanElem}

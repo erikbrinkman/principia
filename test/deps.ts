@@ -1,9 +1,10 @@
-import {
+import { assert } from "https://deno.land/std@0.84.0/testing/asserts.ts";
+export {
   assert,
+  assertEquals,
   assertStrictEquals,
   assertThrows,
 } from "https://deno.land/std@0.84.0/testing/asserts.ts";
-export { assert, assertStrictEquals, assertThrows };
 
 export function assertAlmostEquals(
   actual: number,

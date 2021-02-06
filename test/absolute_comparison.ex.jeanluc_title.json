@@ -1,0 +1,12 @@
+{
+  "type": "absolute comparison",
+  "data": [
+    { "name": "Group leaders", "value": 0.07 },
+    { "name": "Postdocs", "value": 0.22 },
+    { "name": "PhD students", "value": 0.35 },
+    { "name": "Technitians", "value": 0.3 },
+    { "name": "Admin. support", "value": 0.06 }
+  ],
+  "axis": { "format": ".0%" },
+  "title": { "name": "Personnel" }
+}

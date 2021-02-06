@@ -1,11 +1,27 @@
 import { yargs } from "./deps.ts";
-import render, { Format, formats } from "./render/index.ts";
-import plot from "./plot/index.tsx";
-import { isStringUnion } from "./utils.ts";
+import render, { formats } from "./render/mod.ts";
+import plot, { isConfig } from "./plot/mod.tsx";
+import auto from "./auto.ts";
+import parse from "./parse.ts";
+import { readTextFile, validateStringUnion, writeTextFile } from "./utils.ts";
 import { defaultThemes, printThemeHelp, readThemes } from "./plot/style.ts";
 
-// TODO when permissions is stable,  prompt for permissions places rather than
+// FIXME create "custom" "logger" that allows setting level and prefix, maybe
+// also with a panic option that raises internal errors
+
+// FIXME make each of these a dynamic import, so we don't require unnecessary
+// flags, like unstable, or maybe find a better way around render being unstable
+// doing this will make validation more difficult... actually, formats is the
+// only hard part because it goes into yargs, isConfig can presumably be loaded
+// from the same package, as we can load it when we load the rest of the module
+// FIXME before this, first check that we still get type checking from dynamic
+// imports, e.g. checking is on the fly, but not treaded as just any also test
+// that unstable dynamics are deferred, otherwise there's little point
+
+// FIXME when permissions is stable,  prompt for permissions places rather than
 // just failing
+
+// FIXME coverage and lint
 
 function autoOffNumber(str: string): number | null | undefined {
   if (str === "auto") return undefined;
@@ -15,6 +31,14 @@ function autoOffNumber(str: string): number | null | undefined {
     throw new Error(`"${str}" can not be interpreted as a number`);
   }
   return val;
+}
+
+function asInput(inp: string): string | Deno.Reader {
+  return inp === "-" ? Deno.stdin : inp;
+}
+
+function asOutput(outp: string): string | Deno.Writer {
+  return outp === "-" ? Deno.stdout : outp;
 }
 
 // NOTE can't get cwd without permission, and probably can't et name if
@@ -44,13 +68,24 @@ const args = yargs(Deno.args)
     count: true,
     describe: "Increase verbosity",
   })
-  /*
-  .command("auto", "Convert data to a viewable graph")
+  // FIXME notably, add config options like format
+  .command(
+    "auto",
+    "Convert data to a viewable graph",
+    // deno-lint-ignore no-explicit-any
+    (ygs: any) =>
+      // FIXME make option so we can use it without specifying auto
+      ygs.option("format", {
+        alias: "f",
+        describe:
+          "output format inferred from output extension or default to pdf",
+        choices: formats,
+      }),
+  )
   .command(
     "parse",
     "Parse data to json",
   )
-  */
   .command(
     "plot",
     "Convert a json spec to an svg",
@@ -76,56 +111,6 @@ const args = yargs(Deno.args)
           default: [],
           describe: "json theme files to append to svg",
         })
-        .option("font-size", {
-          number: true,
-          default: 10,
-          describe: "the font size for plotting",
-        })
-        .option("axis-color", {
-          string: true,
-          default: "#838383",
-          describe: "color of axis elements",
-        })
-        .option("axis-line-width", {
-          number: true,
-          default: 1,
-          describe: "width of axis lines",
-        })
-        .option("axis-tick-length", {
-          number: true,
-          default: 1.5,
-          describe: "length of axis ticks",
-        })
-        .option("axis-gap", {
-          number: true,
-          default: 3,
-          describe: "gap between axis and plot",
-        })
-        .option("axis-tick-label-gap", {
-          number: true,
-          default: 2,
-          describe: "gap between axis tick labels and axis bar",
-        })
-        .option("label-gap", {
-          number: true,
-          default: 3,
-          describe: "gap between data labels and data",
-        })
-        .option("line-width", {
-          number: true,
-          default: 1.5,
-          describe: "width of line data",
-        })
-        .option("span-opacity", {
-          number: true,
-          default: 0.3,
-          describe: "opacity of spans",
-        })
-        .option("point-outline", {
-          number: true,
-          default: 3,
-          describe: "width of point outline",
-        })
         .option("theme-help", {
           string: true,
           choices: [""].concat(Object.keys(defaultThemes)),
@@ -140,7 +125,7 @@ const args = yargs(Deno.args)
       ygs.positional("format", {
         describe:
           "output format inferred from output extension or default to pdf",
-        choices: [...formats],
+        choices: formats,
       })
         .option("xaxis-ticks", {
           string: true,
@@ -189,9 +174,14 @@ const args = yargs(Deno.args)
           describe: "left-align absolute comparison labels",
           default: true,
         })
-        .option("abscomp-values", {
+        .option("abscomp-axis-labels", {
           boolean: true,
-          describe: "right-align absolute comparison values",
+          describe: "right-align absolute comparison axis labels",
+          default: true,
+        })
+        .option("abscomp-title", {
+          boolean: true,
+          describe: "left-align absolute comparison title",
           default: true,
         })
         .option("scale", {
@@ -209,10 +199,16 @@ const args = yargs(Deno.args)
   .help()
   .alias("help", "h")
   .alias("version", "V").argv;
-// TODO yarg.wrap(yargs.terminalWidth()) env?
+// NOTE can't make it strict because we want lack of command to be treated as auto
+// TODO yarg.wrap(yargs.terminalWidth()) env?, use permission to see if it's allowed, but don't prompt for it
 
-// TODO lazily import these as necessary, how easy is this with "deps.ts"?
 switch (args._[0]) {
+  case "parse": {
+    const input = await readTextFile(asInput(args.input));
+    const output = parse(input);
+    await writeTextFile(asOutput(args.output), JSON.stringify(output), "\n");
+    break;
+  }
   case "plot": {
     if (args.themeHelp !== undefined) {
       printThemeHelp(args.themeHelp);
@@ -224,56 +220,67 @@ switch (args._[0]) {
         args.themes.map(readThemes),
       ),
     ]);
-    await plot(
-      args.input === "-" ? Deno.stdin : args.input,
-      args.output === "-" ? Deno.stdout : args.output,
-      args,
-      stylesheets.concat(args.css) as string[],
-      Object.assign({}, ...themes),
+    const input = await readTextFile(asInput(args.input));
+    const config = JSON.parse(input);
+    if (!isConfig(config)) throw new Error("FIXME");
+    const svg = await plot(
+      config,
+      {
+        extraStyle: stylesheets.concat(args.css).join("\n\n") as string,
+        customThemes: Object.assign({}, ...themes),
+        verbosity: args.verbose,
+      },
     );
+    await writeTextFile(asOutput(args.output), svg, "\n");
     break;
   }
   case "render": {
-    let format: Format;
-    if (args.format) {
-      if (isStringUnion(formats, args.format)) {
-        format = args.format;
-      } else {
-        throw new Error(`got unnknown outut format: ${args.format}`);
-      }
-    } else if (args.output !== "-") {
-      const extension = args.output.split(".").pop().toLowerCase();
-      if (isStringUnion(formats, extension)) {
-        format = extension;
-      } else {
-        throw new Error(
-          `output extension wasn't one of ${
-            [...formats].join(", ")
-          } (${extension}); either this is an error, or you should manually specify the output format`,
-        );
-      }
-    } else {
-      format = "pdf";
-    }
-    if (args.verbose) {
-      console.error(`using output format: ${format}`);
+    if (
+      args.format !== undefined && !validateStringUnion(formats, args.format)
+    ) {
+      throw new Error(
+        `internal error: got unnknown outut format: ${args.format}`,
+      );
     }
     await render(
-      args.input === "-" ? Deno.stdin : args.input,
-      args.output === "-" ? Deno.stdout : args.output,
-      format,
+      asInput(args.input),
+      asOutput(args.output),
       {
-        xticks: args["xaxis-ticks"],
-        xlabel: args["xaxis-label"],
-        xshift: args["shift-xaxis-label"],
-        yticks: args["yaxis-ticks"],
-        ylabel: args["yaxis-label"],
-        evoLabels: args["evo-labels"],
-        abscompLabels: args["abscomp-labels"],
-        abscompValues: args["abscomp-values"],
+        alignments: {
+          abscompLabels: args.abscompLabels,
+          abscompAxisLabels: args.abscompAxisLabels,
+          abscompTitle: args.abscompTitle,
+          xticks: args.xaxisTicks,
+          xlabel: args.xaxisLabel,
+          xshift: args.shiftXaxisLabel,
+          yticks: args.yaxisTicks,
+          ylabel: args.yaxisLabel,
+          evoLabels: args.evoLabels,
+        },
+        format: args.format,
+        verbosity: args.verbose,
+        scale: args.scale,
+        quality: args.quality,
       },
-      { verbosity: args.verbose, scale: args.scale, quality: args.quality },
     );
+    break;
+  }
+  case undefined:
+  case "auto": {
+    // FIXME for auto to pick up on aliases when not passed it, the aliases
+    // need to be defined globally
+    if (
+      args.format !== undefined && !validateStringUnion(formats, args.format)
+    ) {
+      throw new Error(
+        `internal error: got unnknown outut format: ${args.format}`,
+      );
+    }
+    const contents = await readTextFile(asInput(args.input));
+    await auto(contents, asOutput(args.output), {
+      format: args.format,
+      verbosity: args.verbose,
+    });
     break;
   }
   default: {

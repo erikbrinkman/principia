@@ -1,64 +1,73 @@
-import {
-  compile,
-  CSSProperties,
-  d3,
-  JSONSchemaType,
-  React,
-  ReactElement,
-} from "../deps.ts";
+import { CSSProperties, JTDSchemaType, React, ReactElement } from "./deps.ts";
 import {
   ContinuousScale,
   Curve,
   curveMap,
   curves,
-  Format,
-  n,
+  Formatter,
   Point,
   pointMap,
   points,
-} from "./types.ts";
-import Axis from "./axes.tsx";
+} from "./config.ts";
+// FIXME move to plot if only necessary here
 import { median } from "../utils.ts";
 
-// x coordinate with either: y coordinate (line); y0 - y1 coordinates (span);
-// y0 - y - y1 coordinates (line and span)
-type Datum = [number, number] | [number, number, number] | [
-  number,
-  number,
-  number,
-  number,
-];
-
-function isTwo(data: Datum[]): data is [number, number][] {
+// x, y
+function isTwo(data: number[][]): data is [number, number][] {
   return data.every((d) => d.length === 2);
 }
 
-function isThree(data: Datum[]): data is [number, number, number][] {
+// x, y0 - y1
+function isThree(data: number[][]): data is [number, number, number][] {
   return data.every((d) => d.length === 3);
 }
 
-function isFour(data: Datum[]): data is [number, number, number, number][] {
+// x, y0, y, y1
+function isFour(data: number[][]): data is [number, number, number, number][] {
   return data.every((d) => d.length === 4);
 }
 
 interface EvolutionDatum {
-  data: Datum[];
+  data: number[][];
   color?: string;
   label?: string;
   curve?: Curve;
   point?: Point;
 }
 
+const evolutionDatumSchema: JTDSchemaType<EvolutionDatum> = {
+  properties: {
+    data: {
+      elements: { elements: { type: "float64" } },
+    },
+  },
+  optionalProperties: {
+    color: { type: "string" },
+    label: { type: "string" },
+    curve: { enum: curves },
+    point: { enum: points },
+  },
+};
+
 export interface EvolutionAxis {
   label?: string;
-  format?: Format;
+  format?: string;
   min?: number;
   max?: number;
   ticks?: number[];
 }
 
+const evolutionAxisSchema: JTDSchemaType<EvolutionAxis> = {
+  optionalProperties: {
+    label: { type: "string" },
+    format: { type: "string" },
+    min: { type: "float64" },
+    max: { type: "float64" },
+    ticks: { elements: { type: "float64" } },
+  },
+};
+
 export interface EvolutionData {
-  type: "evolution";
   data: EvolutionDatum[];
   width?: number;
   height?: number;
@@ -67,93 +76,152 @@ export interface EvolutionData {
   yaxis?: EvolutionAxis;
 }
 
-const evolutionSchema: JSONSchemaType<EvolutionData> = {
-  type: "object",
+export const evolutionSchema: JTDSchemaType<EvolutionData> = {
   properties: {
-    type: { type: "string", const: "evolution" },
     data: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          data: {
-            type: "array",
-            minItems: 1,
-            oneOf: [
-              {
-                items: {
-                  type: "array",
-                  items: [{ type: "number" }, { type: "number" }],
-                  minItems: 2,
-                  maxItems: 2,
-                },
-              },
-              {
-                items: {
-                  type: "array",
-                  items: [{ type: "number" }, { type: "number" }, {
-                    type: "number",
-                  }],
-                  minItems: 3,
-                  maxItems: 3,
-                },
-              },
-              {
-                items: {
-                  type: "array",
-                  items: [{ type: "number" }, { type: "number" }, {
-                    type: "number",
-                  }, { type: "number" }],
-                  minItems: 4,
-                  maxItems: 4,
-                },
-              },
-            ],
-            // NOTE JSONSchemaType doesn't accurately type check unions
-          } as unknown as JSONSchemaType<Datum[]>,
-          color: n({ type: "string" }),
-          label: n({ type: "string" }),
-          curve: n({ type: "string", enum: curves }),
-          point: n({ type: "string", enum: points }),
-        },
-        required: ["data"],
-        additionalProperties: false,
-      },
-      minItems: 1,
+      elements: evolutionDatumSchema,
     },
-    width: n({ type: "number", minimum: 0 }),
-    height: n({ type: "number", minimum: 0 }),
-    theme: n({ type: "string" }),
-    xaxis: n({
-      type: "object",
-      properties: {
-        label: n({ type: "string" }),
-        format: n({ type: "string" }),
-        min: n({ type: "number" }),
-        max: n({ type: "number" }),
-        ticks: n({ type: "array", items: { type: "number" } }),
-      },
-      required: [],
-      additionalProperties: false,
-    }),
-    yaxis: n({
-      type: "object",
-      properties: {
-        label: n({ type: "string" }),
-        format: n({ type: "string" }),
-        min: n({ type: "number" }),
-        max: n({ type: "number" }),
-        ticks: n({ type: "array", items: { type: "number" } }),
-      },
-      required: [],
-      additionalProperties: false,
-    }),
   },
-  required: ["type", "data"],
-  additionalProperties: false,
+  optionalProperties: {
+    width: { type: "float64" },
+    height: { type: "float64" },
+    theme: { type: "string" },
+    xaxis: evolutionAxisSchema,
+    yaxis: evolutionAxisSchema,
+  },
 };
 
-const isEvolution = compile(evolutionSchema);
+// FIXME remove autoalign in favor of just align, make alignment done via css / parameters
+
+/**
+ * gets unique sorted ticks based on formatter
+ *
+ * Picks either the min, or max value, or the mean if neither.
+ */
+function getRenderedTicks(
+  min: number,
+  max: number,
+  ticks: number[],
+  formatter: Formatter,
+): number[] {
+  const unique = new Map<string, Set<number>>();
+  for (const num of ticks.slice().concat([min, max])) {
+    const form = formatter(num);
+    const nums = unique.get(form);
+    if (nums === undefined) {
+      unique.set(form, new Set<number>([num]));
+    } else {
+      nums.add(num);
+    }
+  }
+  const result = [];
+  for (const nums of unique.values()) {
+    if (nums.has(min)) {
+      result.push(min);
+    } else if (nums.has(max)) {
+      result.push(max);
+    } else {
+      result.push([...nums].reduce((a, v, i) => a + (v - a) / (i + 1), 0));
+    }
+  }
+  result.sort((a, b) => a - b);
+  return result;
+}
+
+function Bar(
+  { type, min, max }: { type: "x" | "y"; min: number; max: number },
+): ReactElement {
+  if (type === "x") {
+    return <line x1={min} x2={max} className="princ-axis-bar" />;
+  } else {
+    return <line y1={min} y2={max} className="princ-axis-bar" />;
+  }
+}
+
+function Tick(
+  { type, tick, scale, formatter }: {
+    type: "x" | "y";
+    tick: number;
+    scale: ContinuousScale;
+    formatter: Formatter;
+  },
+): ReactElement {
+  const transform = type === "x"
+    ? `translate(${scale(tick)}, 0)`
+    : `translate(0, ${scale(tick)})`;
+  const mark = type === "x"
+    ? <line y2={-1} className="princ-tick-mark" />
+    : <line x2={1} className="princ-tick-mark" />;
+  return (<g
+    className="princ-tick"
+    transform={transform}
+  >
+    {mark}
+    <g className="princ-tick-label">
+      <g className="princ-align-tick">
+        <text
+          alignmentBaseline={type === "x" ? "hanging" : "middle"}
+          textAnchor={type === "x" ? "middle" : "end"}
+        >
+          {formatter(tick)}
+        </text>
+      </g>
+    </g>
+  </g>);
+}
+
+function Label(
+  { type, label, mid }: { type: "x" | "y"; label: string; mid: number },
+): ReactElement {
+  return (<g className="princ-label">
+    <g className="princ-align-label">
+      <text
+        alignmentBaseline={type === "x" ? "hanging" : "baseline"}
+        textAnchor={type === "x" ? "middle" : "start"}
+        x={type === "x" ? mid : 0}
+      >
+        {label}
+      </text>
+    </g>
+  </g>);
+}
+
+function Axis({
+  type,
+  scale,
+  format = "",
+  ticks = [],
+  label,
+}: {
+  type: "x" | "y";
+  scale: ContinuousScale;
+  format?: string;
+  ticks?: number[];
+  label?: string;
+}): ReactElement {
+  /*
+  const min = Math.min(...scale.domain());
+  const max = Math.max(...scale.domain());
+  const formatter = d3.format(format);
+  const ticksRendered = getRenderedTicks(min, max, ticks, formatter);
+  const tickElems = ticksRendered.map((tick, i) =>
+    <Tick key={i} type={type} tick={tick} scale={scale} formatter={formatter} />
+  );
+  const rmin = Math.min(...scale.range());
+  const rmax = Math.max(...scale.range());
+  const labelElem = label
+    ? <Label type={type} label={label} mid={(rmin + rmax) / 2} />
+    : null;
+  return (<g className={`princ-axis princ-${type}axis`}>
+    <g className="princ-align-axis">
+      <Bar type={type} min={rmin} max={rmax} />
+      {tickElems}
+      {labelElem}
+    </g>
+  </g>);
+   */
+  return <>/</>;
+}
 
 function EvoDatum(
   {
@@ -166,12 +234,13 @@ function EvoDatum(
     yscale,
   }: EvolutionDatum & { xscale: ContinuousScale; yscale: ContinuousScale },
 ): ReactElement {
+  /*
   const curveFunc = curveMap[curve];
   const lineFunc = d3.line(
     ([x]) => xscale(x),
     ([, y]) => yscale(y),
   ).curve(curveFunc);
-  const pointPath = d3.symbol(pointMap[point])() || undefined;
+  const pointPath = d3.symbol(pointMap[point], 1)() || undefined;
 
   let spanPath, points;
   if (isTwo(data)) {
@@ -248,28 +317,21 @@ function EvoDatum(
     {pointsElem}
     {labelElem}
   </g>;
+  */
+  return <></>;
 }
 
 export default function Evolution(
-  props: Record<string, unknown>,
-): ReactElement {
-  if (!isEvolution(props)) {
-    const messages = (isEvolution.errors || []).map(({ dataPath, message }) =>
-      `${dataPath}: ${message}`
-    )
-      .join("\n");
-    throw new Error(`invalid evolution config:\n${messages}`);
-  }
-
-  const {
+  {
     data,
     width = 162,
     height = 100,
-    theme = "mathematica",
     xaxis = {},
     yaxis = {},
-  } = props;
-
+    theme = "mathematica",
+  }: EvolutionData,
+): ReactElement {
+  /*
   const {
     min: xpmin = Number.POSITIVE_INFINITY,
     max: xpmax = Number.NEGATIVE_INFINITY,
@@ -314,20 +376,24 @@ export default function Evolution(
   const yscale = d3.scaleLinear([ymin, ymax], [height, 0]);
 
   const itemElems = data.map((datum, i) =>
-    <EvoDatum xscale={xscale} yscale={yscale} {...datum} key={i} />
+    <EvoDatum key={i} xscale={xscale} yscale={yscale} {...datum} />
   );
+  const style = genStyle({}, extraStyle, customThemes);
 
-  return (<g className={theme}>
-    <g className="princ-evolution">
-      <g transform={`translate(0, ${height})`}>
-        <Axis type="x" scale={xscale} {...xrest} />
+  return (
+    <g className={theme}>
+      <g className="princ-evolution">
+        <g transform={`translate(0, ${height})`}>
+          <Axis type="x" scale={xscale} {...xrest} />
+        </g>
+        <g>
+          <Axis type="y" scale={yscale} {...yrest} />
+        </g>
+        <g>
+          {itemElems}
+        </g>
       </g>
-      <g>
-        <Axis type="y" scale={yscale} {...yrest} />
-      </g>
-      <g className="princ-evolution-items">
-        {itemElems}
-      </g>
-    </g>
-  </g>);
+    </g>);
+   */
+  return <></>;
 }

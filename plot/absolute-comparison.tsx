@@ -1,113 +1,257 @@
 import {
-  compile,
   CSSProperties,
   d3,
-  JSONSchemaType,
+  d3scale,
+  JTDSchemaType,
   React,
   ReactElement,
-} from "../deps.ts";
-import { ContinuousScale, Format, Formatter, n } from "./types.ts";
+} from "./deps.ts";
+import { ContinuousScale, Formatter } from "./config.ts";
 
-export interface AbsoluteComparisonDatum {
+interface Datum {
   name: string;
   value: number;
   color?: string;
 }
 
-export interface AbsoluteComparisonData {
-  type: "absolute comparison";
-  data: AbsoluteComparisonDatum[];
-  width?: number;
-  format?: Format;
-  theme?: string;
-  sort?: "asc" | "desc";
-}
-
-const absoluteComparisonSchema: JSONSchemaType<AbsoluteComparisonData> = {
-  type: "object",
+const datumSchema: JTDSchemaType<Datum> = {
   properties: {
-    type: { type: "string", const: "absolute comparison" },
-    data: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-          value: { type: "number", minimum: 0 },
-          color: n({ type: "string" }),
-        },
-        required: ["name", "value"],
-        additionalProperties: false,
-      },
-      minItems: 1,
-    },
-    width: n({ type: "number", minimum: 0 }),
-    format: n({ type: "string" }),
-    theme: n({ type: "string" }),
-    sort: n({ type: "string", enum: ["asc", "desc"] }),
+    name: { type: "string" },
+    value: { type: "float64" },
   },
-  required: ["type", "data"],
-  additionalProperties: false,
+  optionalProperties: {
+    color: { type: "string" },
+  },
 };
 
-const isAbsoluteComparison = compile(absoluteComparisonSchema);
+interface LabelConfig {
+  gap?: number;
+  height?: number;
+  color?: string;
+}
 
-function AbsoluteComparisonItem({
+const labelSchema: JTDSchemaType<LabelConfig> = {
+  optionalProperties: {
+    gap: { type: "float64" },
+    height: { type: "float64" },
+    color: { type: "string" },
+  },
+};
+
+interface AxisConfig {
+  gap?: number;
+  format?: string;
+  height?: number;
+  color?: string;
+}
+
+const axisSchema: JTDSchemaType<AxisConfig> = {
+  optionalProperties: {
+    gap: { type: "float64" },
+    height: { type: "float64" },
+    format: { type: "string" },
+    color: { type: "string" },
+  },
+};
+
+interface TitleConfig {
+  name?: string;
+  gap?: number;
+  height?: number;
+  color?: string;
+}
+
+const titleSchema: JTDSchemaType<TitleConfig> = {
+  optionalProperties: {
+    name: { type: "string" },
+    gap: { type: "float64" },
+    height: { type: "float64" },
+    color: { type: "string" },
+  },
+};
+
+interface Config {
+  data: Datum[];
+  height?: number;
+  plot?: { width?: number; height?: number };
+  label?: LabelConfig;
+  axis?: AxisConfig;
+  title?: TitleConfig;
+  theme?: string;
+  sort?: "asc" | "desc" | "off";
+}
+
+export const absoluteComparisonSchema: JTDSchemaType<Config> = {
+  properties: {
+    data: {
+      elements: datumSchema,
+    },
+  },
+  optionalProperties: {
+    height: { type: "float64" },
+    plot: {
+      optionalProperties: {
+        width: { type: "float64" },
+        height: { type: "float64" },
+      },
+    },
+    label: labelSchema,
+    axis: axisSchema,
+    title: titleSchema,
+    theme: { type: "string" },
+    sort: { enum: ["asc", "desc", "off"] },
+  },
+};
+
+function Label(
+  { name, color = "black", gap = 10, height = 14 }: LabelConfig & {
+    name: string;
+  },
+): ReactElement {
+  return (
+    <g
+      className="princ-label"
+      style={{
+        transform: `translateX(calc(var(--label-gap, ${gap}) * -1px))`,
+        fill: `var(--label-color, ${color})`,
+        fontSize: `calc(var(--label-height, ${height}) * 1px)`,
+        dominantBaseline: "central",
+        textAnchor: "end",
+      }}
+    >
+      <g className="princ-align-label">
+        <text>{name}</text>
+      </g>
+    </g>
+  );
+}
+
+function Plot(
+  { value, width, height }: {
+    value: number;
+    width: number;
+    height: number;
+  },
+): ReactElement {
+  // NOTE y isn't in CSSProperties
+  return <rect
+    className="princ-comparison"
+    style={{
+      height: `calc(var(--plot-height, ${height}) * 1px)`,
+      y: `calc(var(--plot-height, ${height}) * -0.5px)`,
+      width: `${value}`,
+      transform: `scaleX(var(--plot-width, ${width}))`,
+      fill: "var(--color)",
+    } as CSSProperties}
+  />;
+}
+
+function Axis(
+  { value, gap = 10, format = "", color = "var(--jeanluc-grey)", height = 14 }:
+    & AxisConfig
+    & {
+      value: number;
+    },
+): ReactElement {
+  const formatted = d3.format(format)(value);
+  return (
+    <g
+      className="princ-axis-label"
+      style={{
+        transform: `translateX(calc(var(--axis-gap, ${gap}) * 1px))`,
+        fill: `var(--axis-color, ${color})`,
+        fontSize: `calc(var(--axis-height, ${height}) * 1px)`,
+        dominantBaseline: "central",
+        textAnchor: "start",
+      }}
+    >
+      <g className="princ-align-axis-label">
+        <text>
+          {formatted}
+        </text>
+      </g>
+    </g>
+  );
+}
+
+function Item({
   name,
   value,
   color,
+  axis,
+  label,
+  height,
+  plotWidth,
+  plotHeight,
+  index,
   scale,
-  formatter,
-}: AbsoluteComparisonDatum & {
+}: Datum & {
+  axis: AxisConfig;
+  label: LabelConfig;
+  height: number;
+  plotWidth: number;
+  plotHeight: number;
+  index: number;
   scale: ContinuousScale;
-  formatter: Formatter;
 }): ReactElement {
-  const width = Math.max(...scale.range());
-
   return (<g
-    className="princ-item princ-item-abscomp"
-    style={{ "--color": color } as CSSProperties}
+    className="princ-item"
+    style={{
+      transform: `translateY(calc(var(--height, ${height}) * ${index}px))`,
+      "--color": color,
+    } as CSSProperties}
   >
-    <g className="princ-label">
-      <g className="princ-align-label">
-        <g className="princ-autoalign-label">
-          <text textAnchor="end" alignmentBaseline="central">{name}</text>
-        </g>
-      </g>
-    </g>
-    <rect className="princ-comparison" width={scale(value)} />
-    <g className="princ-value">
-      <g className="princ-align-value">
-        <g className="princ-autoalign-value">
-          <text alignmentBaseline="central" x={width}>
-            {formatter(value)}
-          </text>
-        </g>
-      </g>
+    <Label {...label} name={name} />
+    <Plot
+      value={scale(value)}
+      width={plotWidth}
+      height={plotHeight}
+    />
+    <g
+      style={{
+        transform: `translateX(calc(var(--plot-width, ${plotWidth}) * 1px))`,
+      }}
+    >
+      <Axis {...axis} value={value} />
     </g>
   </g>);
 }
 
-export default function AbsoluteComparison(
-  props: Record<string, unknown>,
+function Title(
+  { name, color = "black", gap = 20, height = 16 }: TitleConfig,
 ): ReactElement {
-  if (!isAbsoluteComparison(props)) {
-    const messages = (isAbsoluteComparison.errors || []).map((
-      { dataPath, message },
-    ) => `${dataPath}: ${message}`)
-      .join("\n");
-    throw new Error(`invalid absolute comparison config:\n${messages}`);
-  }
-  const {
+  return (
+    <g
+      className="princ-title"
+      style={{
+        transform: `translateY(calc(var(--title-gap, ${gap}) * -1px))`,
+        fill: `var(--title-color, ${color})`,
+        fontSize: `calc(var(--title-height, ${height}) * 1px)`,
+      }}
+    >
+      <g className="princ-align-title">
+        <text>{name}</text>
+      </g>
+    </g>
+  );
+}
+
+export default function AbsoluteComparison(
+  {
     data,
     theme = "jeanluc-red",
-    width = 162,
-    format = "",
-    sort,
-  } = props;
-  const formatter = d3.format(format);
+    height = 20,
+    plot: { height: plotHeight = 10, width = 162 } = {},
+    label = {},
+    axis = {},
+    title = {},
+    sort = "desc",
+  }: Config,
+): ReactElement {
   const max = Math.max(...data.map(({ value }) => value));
-  const scale = d3.scaleLinear([0, max], [0, width]);
+  const scale = d3.scaleLinear([0, max], [0, 1]);
+
+  // TODO warn if verbosity and subheights are larger than height
 
   if (sort === "asc") {
     data.sort((a, b) => a.value - b.value);
@@ -116,16 +260,36 @@ export default function AbsoluteComparison(
   }
 
   const itemElems = data.map((datum, i) =>
-    <g style={{ transform: `translate(0, ${i}em)` }}>
-      <AbsoluteComparisonItem
-        key={i}
-        {...datum}
-        formatter={formatter}
-        scale={scale}
-      />
+    <Item
+      key={i}
+      index={i}
+      {...datum}
+      axis={axis}
+      label={label}
+      height={height}
+      plotHeight={plotHeight}
+      plotWidth={width}
+      scale={scale}
+    />
+  );
+  const titleElem = title.name ? <Title {...title} /> : null;
+
+  return (
+    <g className={theme}>
+      <g
+        className="princ-abscomp"
+      >
+        <g
+          style={{
+            transform: `translateY(calc(var(--height, ${height}) * -0.5px))`,
+          }}
+        >
+          {titleElem}
+        </g>
+        {itemElems}
+      </g>
     </g>
   );
-
-  return (<g className={theme}><g className="princ-abscomp">{itemElems}</g>
-  </g>);
 }
+
+export type AbsoluteComparisonConfig = Config;

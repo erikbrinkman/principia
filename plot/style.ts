@@ -1,43 +1,28 @@
-import { compile, JSONSchemaType, wrap } from "../deps.ts";
+import { Ajv, JTDSchemaType, wrap } from "./deps.ts";
 // NOTE deno doesn't allow importing anything but javascript-esqe files, so
 // unfortunately, we have to "encode" the css this way. But it allows use to
 // auto generate css themes
 
+// FIXME overload variables with the appropriate default in every downstream
+// layout, that way the style can be rendered separately
 // TODO add some default css that makes the html version interactive, even post auto alignment
 // TODO add line styles
 
-export type Variables = {
-  fontSize: number;
-  axisColor: string;
-  axisLineWidth: number;
-  axisTickLength: number;
-  axisGap: number;
-  axisTickLabelGap: number;
-  labelGap: number;
-  lineWidth: number;
-  spanOpacity: number;
-  pointOutline: number;
-};
 export type Themes = Record<string, Record<string, string>>;
 
-const themesSchema: JSONSchemaType<Themes> = {
-  type: "object",
-  required: [],
-  additionalProperties: {
-    type: "object",
-    required: [],
-    additionalProperties: { type: "string" },
+const themesSchema: JTDSchemaType<Themes> = {
+  values: {
+    values: { type: "string" },
   },
 };
 
-const isThemes = compile(themesSchema);
+const ajv = new Ajv();
+const isThemes = ajv.compile(themesSchema);
 
 export async function readThemes(filename: string): Promise<Themes> {
   const file = await Deno.readTextFile(filename);
   const json = JSON.parse(file);
-  if (!isThemes(json)) {
-    throw new Error(`${filename} wasn't a valid themes file`);
-  }
+  if (!isThemes(json)) throw new Error("FIXME");
   return json;
 }
 
@@ -53,7 +38,7 @@ export const defaultThemes = {
     purple: "#6E2E8D",
   },
   jeanluc: {
-    red: "#EE7773",
+    red: "#EE7873",
     yellow: "#F5BF70",
     grey: "#828282",
   },
@@ -204,13 +189,12 @@ export function printThemeHelp(theme: string): void {
     const heading = "".padStart(theme.length, "-");
     console.log(`${theme}\n${heading}\n${themesDesc}`);
   } else {
-    // NOTE this should be unreacable
-    throw new Error(`'${theme}' wasn't in default themes`);
+    throw new Error(`internal error: '${theme}' wasn't in default themes`);
   }
 }
 
 export default function genStyle(
-  variables: Variables,
+  extraStyle = "",
   customThemes: Themes = {},
 ): string {
   const themes = Object.assign({}, defaultThemes, customThemes);
@@ -234,19 +218,6 @@ export default function genStyle(
   }
   return `
 :root {
-  /* simple layout */
-  --font-size: ${variables.fontSize}px;
-  --axis-color: ${variables.axisColor};
-  --axis-line-width: ${variables.axisLineWidth}px;
-  --axis-tick-length: ${variables.axisTickLength};
-  --axis-gap: ${variables.axisGap}px;
-  --axis-tick-label-gap: ${variables.axisTickLabelGap}px;
-  --label-gap: ${variables.labelGap}px;
-  --line-width: ${variables.lineWidth};
-  --span-opacity: ${variables.spanOpacity};
-  --point-outline: ${variables.pointOutline}px;
-
-  font-size: var(--font-size);
   font-family: sans-serif;
 
   /* colors */
@@ -343,39 +314,13 @@ export default function genStyle(
 .princ-points > :first-child:nth-last-child(n + 40) {
   display: none;
 }
-
-/* ------------------- *
- * Absolute Comparison *
- * ------------------- */
-
-.princ-abscomp .princ-align-label {
-  transform: translate(calc(-1 * var(--label-gap)), 0);
-}
-
-.princ-abscomp .princ-comparison {
-  fill: var(--color, black);
-}
-
-.princ-abscomp .princ-align-value {
-  transform: translate(var(--axis-gap), 0);
-}
-
-.princ-abscomp .princ-value {
-  fill: var(--axis-color);
-}
-
-.princ-abscomp .princ-comparison {
-  /* NOTE we use var to make y half of height */
-  --height: 0.7em;
-  height: var(--height);
-  y: calc(var(--height) / -2);
-}
-
 /* ------ *
  * Themes *
  * ------ */
 
 ${solidThemes.join("\n")}
 ${itemThemes.join("\n")}
+
+${extraStyle}
 `;
 }

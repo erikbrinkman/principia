@@ -1,0 +1,10 @@
+{
+  "type": "relative comparison",
+  "data": [
+    { "name": "France", "value": 79.2 },
+    { "name": "Germany", "value": 78.3 },
+    { "name": "UK", "value": 78 },
+    { "name": "Netherlands", "value": 78 },
+    { "name": "Belgium", "value": 77.9 }
+  ]
+}

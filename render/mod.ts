@@ -1,39 +1,54 @@
-import { JSHandle, JSONObject, puppeteer } from "../deps.ts";
-import { linux } from "./chrome-finder.ts";
-import align, { AlignArgs } from "./adjust.ts";
+import { AlignArgs, loadFunctions } from "./dom/mod.ts";
+import { validateStringUnion, writeTextFile } from "../utils.ts";
+import launch, { JSHandle, JSONObject } from "./puppeteer.ts";
+import createLogger from "../log.ts";
 
-async function loadRelative(relative: string): Promise<string> {
-  const url = new URL(relative, import.meta.url);
-  if (url.protocol === "file:") {
-    return await Deno.readTextFile(url.pathname);
-  } else {
-    const resp = await fetch(url.href);
-    return await resp.text();
-  }
-}
-
-export type Format = "pdf" | "png" | "jpg" | "jpeg" | "html";
-export const formats = new Set<Format>(["pdf", "png", "jpg", "jpeg", "html"]);
+export const formats = ["pdf", "png", "jpg", "jpeg", "html", "svg"] as const;
+export type Format = (typeof formats)[number];
 
 export default async function render(
   input: string | Deno.Reader,
   output: string | Deno.Writer,
-  format: Format = "pdf",
-  alignments: AlignArgs = {},
-  { verbosity = 0, scale = 2, quality = 98 }: {
+  { format, alignments = {}, verbosity = 0, scale = 2, quality = 98 }: {
+    format?: Format;
+    alignments?: AlignArgs;
     verbosity?: number;
     scale?: number;
     quality?: number;
   } = {},
 ): Promise<void> {
+  const log = createLogger("render:", verbosity);
+
+  // derive format
+  if (!format) {
+    if (typeof output === "string") {
+      const extension = output.split(".").pop()!.toLowerCase();
+      if (validateStringUnion(formats, extension)) {
+        format = extension;
+      } else {
+        const formatsString = [...formats].join(", ");
+        throw new Error(
+          `output extension wasn't one of ${formatsString} (${extension}); ` +
+            "either this is an error, or you should manually specify the output format",
+        );
+      }
+    } else {
+      format = "pdf";
+    }
+  }
+  log.info("using output format:", format);
+
+  // start loading these right away
+  const functionPromises = loadFunctions();
+
   const svgData =
     await (typeof input === "string"
       ? Deno.readTextFile(input)
       : Deno.readAll(input).then((raw) => new TextDecoder().decode(raw)));
 
-  const chromePath = await linux();
-  const browser = await puppeteer.launch({ executablePath: chromePath });
+  const browser = await launch();
   try {
+    log.debug("launched browser");
     const page = await browser.newPage();
     await page.goto(
       `data:text/html;charset=utf-8,${encodeURIComponent(svgData)}`,
@@ -41,6 +56,8 @@ export default async function render(
         waitUntil: "networkidle0",
       },
     );
+    log.debug("loaded page");
+
     // log console if verbose
     if (verbosity) {
       page.on("console", async (msg) => {
@@ -52,22 +69,18 @@ export default async function render(
     }
     // remove margin
     await page.addStyleTag({ content: "body { margin: 0; }" });
+
+    const [alignFunc, svgFunc, sizeFunc] = await functionPromises;
+
     // NOTE technically undefined values aren't serializable, but omitted ones
     // are, so this is actually okay
-    await page.evaluate(align, alignments as JSONObject);
+    // FIXME
+    //await page.evaluate(alignFunc, alignments as JSONObject);
+    log.debug("aligned");
 
     // get final size
-    const { width, height } = await page.evaluate(() => {
-      // deno-lint-ignore no-undef
-      const svg = document.getElementsByTagName("svg")[0];
-      const sbbox = svg.getBBox();
-      svg.setAttribute(
-        "viewBox",
-        [sbbox.x, sbbox.y, sbbox.width, sbbox.height].join(" "),
-      );
-      const rect = svg.getBoundingClientRect();
-      return { width: rect.width, height: rect.height };
-    });
+    const { width, height } = await page.evaluate(sizeFunc);
+    log.debug("measured:", width, "x", height);
 
     // write rendered result
     if (format === "pdf") {
@@ -80,7 +93,9 @@ export default async function render(
     } else if (format === "png" || format === "jpg" || format === "jpeg") {
       // get viewport for scaling
       const viewport = page.viewport();
-      if (viewport === null) throw new Error("can't get current viewport");
+      if (viewport === null) {
+        return log.panic("couldn't get current viewport");
+      }
       // set scale
       await page.setViewport({
         width: viewport.width,
@@ -103,7 +118,7 @@ export default async function render(
           clip: { x: 0, y: 0, width, height },
         });
         if (!(buff instanceof Uint8Array)) {
-          throw new Error("pptr screenshot returned unexpected type");
+          return log.panic("screenshot returned unexpected type");
         }
         await Deno.copy(new Deno.Buffer(buff), output);
       }
@@ -114,10 +129,18 @@ export default async function render(
       } else {
         await Deno.writeAll(output, new TextEncoder().encode(html));
       }
+    } else if (format === "svg") {
+      const svg = await page.evaluate(svgFunc);
+      await writeTextFile(output, svg);
     } else {
-      throw new Error(`unknown output format: ${format}`);
+      log.panic("unknown output format:", format);
     }
+    log.debug("output");
+  } catch (ex) {
+    // FIXME this shouldn't be necessary, but it's getting shadowed by final bug error in puppeteer
+    log.warning(ex);
   } finally {
+    await functionPromises;
     await browser.close();
   }
 }

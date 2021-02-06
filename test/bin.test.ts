@@ -1,6 +1,8 @@
 import { assert, assertStrictEquals } from "./deps.ts";
 
-const exec = new URL("../index.ts", import.meta.url).pathname;
+const exec = new URL("../bin.ts", import.meta.url).pathname;
+
+// FIXME this should test prompting for permission if possible
 
 async function run(
   cmd: string,
@@ -14,12 +16,14 @@ async function run(
       `--allow-read=${input}`,
       `--allow-write=/tmp,${output}`,
       "--allow-run",
-      "--allow-env",
+      "--allow-env", // FIXME What env do we need?
       "--allow-net=127.0.0.1",
+      "--unstable", // FIXME
     ]
     : [
       `--allow-read=${input}`,
       `--allow-write=${output}`,
+      "--unstable", // FIXME
     ];
   const proc = Deno.run({
     cmd: [
@@ -46,6 +50,7 @@ Deno.test("prints help", async () => {
     cmd: [
       "deno",
       "run",
+      "--unstable", // FIXME
       exec,
       "-h",
     ],
@@ -66,6 +71,7 @@ Deno.test("prints theme help", async () => {
     cmd: [
       "deno",
       "run",
+      "--unstable", // FIXME
       exec,
       "plot",
       "--theme-help",
@@ -82,6 +88,7 @@ Deno.test("prints theme help", async () => {
   proc.close();
 });
 
+/*
 Deno.test("converts evolution bachelor", async () => {
   const base = "./evolution.ex.bachelor";
   const jsonFile = new URL(`${base}.json`, import.meta.url).pathname;
@@ -156,3 +163,20 @@ Deno.test("converts absolute comparison", async () => {
     new URL(`${base}.png`, import.meta.url).pathname,
   );
 });
+
+Deno.test("converts absolute comparison jeanluc", async () => {
+  const base = "./absolute_comparison.ex.jeanluc";
+  const jsonFile = new URL(`${base}.json`, import.meta.url).pathname;
+  const svgFile = new URL(`${base}.svg`, import.meta.url).pathname;
+
+  // convert to svg
+  await run("plot", jsonFile, svgFile);
+
+  // render
+  await run(
+    "render",
+    svgFile,
+    new URL(`${base}.png`, import.meta.url).pathname,
+  );
+});
+*/

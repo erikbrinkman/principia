@@ -1,16 +1,8 @@
+/** This file contains stand alone functions to be called in browser */
 // deno-lint-ignore-file no-undef
-// ^document
+import { AlignArgs } from "./bridge.ts";
 
-export interface AlignArgs {
-  yticks?: number | null;
-  ylabel?: number | null;
-  xticks?: number | null;
-  xlabel?: number | null;
-  xshift?: number | null;
-  evoLabels?: number | null;
-  abscompLabels?: boolean;
-  abscompValues?: boolean;
-}
+// TODO allow alignment based of decimal when aligning axis ticks
 
 interface BBox {
   x: number;
@@ -24,19 +16,21 @@ interface Bounds {
   upper?: number;
 }
 
+/** Align all elements acording to specification */
 // NOTE this function must be entirely self contained so that it can be called
 // in the puppeteer context
 // NOTE undefined = auto, null = off, number = manual
 // TODO explose interface that just tests solveQP
-export default async function align({
+async function align({
+  abscompLabels = true,
+  abscompAxisLabels = true,
+  abscompTitle = true,
   yticks,
   ylabel,
   xticks,
   xlabel,
   xshift,
   evoLabels,
-  abscompLabels = true,
-  abscompValues = true,
 }: AlignArgs): Promise<void> {
   // -----
   // utils
@@ -777,6 +771,65 @@ export default async function align({
     await render();
   }
 
+  /* ------------------- *
+   * Absolute Comparison *
+   * ------------------- */
+
+  /** Align absolute comparison lables to left of bars */
+  if (abscompLabels) {
+    const labels = Array.from(
+      document.querySelectorAll(".princ-abscomp .princ-align-label"),
+    ).map(bb);
+    if (labels.length) {
+      await reset(...labels);
+      const bboxes = labels.map(bbox);
+      const minx = Math.min(...bboxes.map(({ x }) => x));
+      for (const [i, { style }] of labels.entries()) {
+        style.transform = `translateX(${minx - bboxes[i].x}px)`;
+      }
+      await render();
+    }
+  }
+
+  /** Align absolute comparison number to right of bars */
+  if (abscompAxisLabels) {
+    const nums = Array.from(
+      document.querySelectorAll(".princ-abscomp .princ-align-tick-label"),
+    ).map(bb);
+    if (nums.length) {
+      await reset(...nums);
+      const bboxes = nums.map(bbox);
+      const maxx = Math.max(...bboxes.map(({ x, width }) => x + width));
+      for (const [i, { style }] of nums.entries()) {
+        style.transform = `translateX(${maxx - bboxes[i].x -
+          bboxes[i].width}px)`;
+      }
+      await render();
+    }
+  }
+
+  /** Align absolute comparison title to left labels */
+  if (abscompTitle) {
+    const title = bb(
+      document.querySelector(".princ-abscomp .princ-align-title"),
+    );
+    const labels = Array.from(
+      document.querySelectorAll(".princ-abscomp .princ-align-label"),
+    ).map(bb);
+    if (title && labels.length) {
+      await reset(title);
+      const tbb = bbox(title);
+      const bboxes = labels.map(bbox);
+      const minx = Math.min(...bboxes.map(({ x }) => x));
+      title.style.transform = `translateX(${minx - tbb.x}px)`;
+      await render();
+    }
+  }
+
+  /* --------- *
+   * Evolution *
+   * --------- */
+
   /** Space apart y ticks */
   if (xticks !== null) {
     const ticks = Array.from(
@@ -932,39 +985,6 @@ export default async function align({
       throw new Error(
         "evolution label spacing was manually specified but there were no evolution labels",
       );
-    }
-  }
-
-  /** Align absolute comparison lables to left of bars */
-  if (abscompLabels) {
-    const labels = Array.from(
-      document.querySelectorAll(".princ-abscomp .princ-autoalign-label"),
-    ).map(bb);
-    if (labels.length) {
-      await reset(...labels);
-      const bboxes = labels.map(bbox);
-      const minx = Math.min(...bboxes.map(({ x }) => x));
-      for (const [i, { style }] of labels.entries()) {
-        style.transform = `translate(${minx - bboxes[i].x}px, 0)`;
-      }
-      await render();
-    }
-  }
-
-  /** Align absolute comparison number to right of bars */
-  if (abscompValues) {
-    const nums = Array.from(
-      document.querySelectorAll(".princ-abscomp .princ-autoalign-value"),
-    ).map(bb);
-    if (nums.length) {
-      await reset(...nums);
-      const bboxes = nums.map(bbox);
-      const maxx = Math.max(...bboxes.map(({ x, width }) => x + width));
-      for (const [i, { style }] of nums.entries()) {
-        style.transform = `translate(${maxx - bboxes[i].x -
-          bboxes[i].width}px, 0)`;
-      }
-      await render();
     }
   }
 }

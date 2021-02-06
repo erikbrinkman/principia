@@ -1,6 +1,6 @@
 {
   "type": "absolute comparison",
-  "format": ".2p",
+  "axis": { "format": ".0%" },
   "data": [
     {
       "name": "Health Professions",

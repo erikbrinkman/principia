@@ -25,7 +25,19 @@ FIXME
 Plot Styles
 -----------
 
+### Evolution
+
 FIXME
+
+<img alt="evolution" src="https://raw.githubusercontent.com/erikbrinkman/principia/master/resources/evolution.ex.bachelor.png" width="800px" />
+<img alt="evolution with span" src="https://raw.githubusercontent.com/erikbrinkman/principia/master/resources/evolution.ex.heart_rate.png" width="600px" />
+
+### Absolute Comparison
+
+FIXME
+
+<img alt="absolute comparionson" src="https://raw.githubusercontent.com/erikbrinkman/principia/master/resources/absolute_comparison.ex.bachelor.png" width="800px" />
+
 
 Acknowledgemnts
 ===============

@@ -15,12 +15,29 @@ Installation and Usage
 Install
 -------
 
-FIXME
+Install the latest version:
+```
+deno install https://deno.land/x/principia/index.ts
+```
 
 Usage
 -----
 
-FIXME
+Get up to date help:
+```
+principia --help
+```
+
+Plot a json plotting spec as an svg:
+```
+principia plot -i <spec.json> -o <plot.svg>
+```
+
+Render an svg, and potentially update layout in ways only possible when rendering:
+```
+principia render -i <plot.svg> -o <rendered.{html,pdf,png,jpg}>
+```
+
 
 Plot Styles
 -----------

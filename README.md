@@ -1,8 +1,8 @@
 Principia
 =========
 
-FIXME Deno link / badge
-FIXME github actions link / badge
+[![deno](https://img.shields.io/badge/deno-latest-informational)](https://deno.land/x/principia)
+[![tests](https://github.com/erikbrinkman/principia/workflows/tests/badge.svg)](https://github.com/erikbrinkman/principia/actions?query=workflow%3Atests)
 
 A command line utility for generating plots roughly according to the guiding ideas behind [Principiae](http://www.principiae.be).
 This [video](https://youtu.be/6lm4wJ1qm0w) presents a quick discussion on the types of plots that this tool is meant to capture.
